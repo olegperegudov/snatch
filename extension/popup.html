@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="tab-bar">
+    <div class="tab active" data-tab="downloads">Downloads</div>
+    <div class="tab" data-tab="completed">Completed</div>
+    <div id="settings-btn" title="Settings">&#9881;</div>
+  </div>
+
+  <!-- Downloads tab: detected + queue -->
+  <div id="tab-downloads" class="tab-content">
+    <div id="detected-section">
+      <div class="section-label">Detected</div>
+      <div id="detected-list"></div>
+      <div id="detected-empty" class="empty-small">No streams on this page</div>
+    </div>
+
+    <div id="queue-section">
+      <div class="section-label">Queue</div>
+      <div id="queue-list"></div>
+      <div id="queue-empty" class="empty-small">Empty</div>
+    </div>
+  </div>
+
+  <!-- Completed tab -->
+  <div id="tab-completed" class="tab-content hidden">
+    <div id="completed-list"></div>
+    <div id="completed-empty" class="empty-small">No downloads yet</div>
+  </div>
+
+  <!-- Settings view (hidden by default) -->
+  <div id="settings" class="hidden">
+    <label>
+      Resolution
+      <select id="s-resolution">
+        <option value="best">Best</option>
+        <option value="1080p">1080p</option>
+        <option value="720p">720p</option>
+        <option value="480p">480p</option>
+      </select>
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="s-filter-res">
+      Only show selected resolution
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="s-skip-downloaded">
+      Skip already downloaded
+    </label>
+    <label>
+      Download folder
+      <input type="text" id="s-download-dir" placeholder="~/Downloads">
+    </label>
+    <label>
+      Max parallel downloads
+      <input type="number" id="s-max-concurrent" min="1" max="10" value="2">
+    </label>
+    <button id="s-save">Save</button>
+    <div id="s-status"></div>
+  </div>
+
+  <div id="daemon-status" class="daemon-offline">Daemon offline</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
