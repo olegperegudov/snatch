@@ -316,9 +316,10 @@ async function loadSettings() {
 }
 
 document.getElementById("s-save").addEventListener("click", async () => {
+  const dir = document.getElementById("s-download-dir").value.trim();
   const settings = {
     preferred_resolution: document.getElementById("s-resolution").value,
-    download_dir: document.getElementById("s-download-dir").value,
+    download_dir: dir,
     max_concurrent: parseInt(document.getElementById("s-max-concurrent").value) || 2,
     filter_resolution: document.getElementById("s-filter-res").checked,
     skip_downloaded: document.getElementById("s-skip-downloaded").checked,
@@ -330,10 +331,84 @@ document.getElementById("s-save").addEventListener("click", async () => {
       body: JSON.stringify(settings),
     });
     currentSettings = settings;
+    if (dir) addToDirHistory(dir);
     document.getElementById("s-status").textContent = "Saved!";
     setTimeout(() => (document.getElementById("s-status").textContent = ""), 2000);
   } catch {
     document.getElementById("s-status").textContent = "Failed — daemon offline?";
+  }
+});
+
+// --- Dir history ---
+async function getDirHistory() {
+  const data = await chrome.storage.local.get("dirHistory");
+  return data.dirHistory || [];
+}
+
+async function addToDirHistory(dir) {
+  let history = await getDirHistory();
+  history = [dir, ...history.filter((d) => d !== dir)].slice(0, 10);
+  await chrome.storage.local.set({ dirHistory: history });
+}
+
+async function removeDirHistory(dir) {
+  let history = await getDirHistory();
+  history = history.filter((d) => d !== dir);
+  await chrome.storage.local.set({ dirHistory: history });
+}
+
+async function renderDirHistory() {
+  const dropdown = document.getElementById("dir-history");
+  const history = await getDirHistory();
+  if (history.length === 0) {
+    dropdown.classList.add("hidden");
+    return;
+  }
+  dropdown.innerHTML = history
+    .map((d) => `
+      <div class="dir-history-item">
+        <span class="dir-history-path" title="${esc(d)}">${esc(d)}</span>
+        <button class="dir-history-remove" data-dir="${esc(d)}" title="Remove">&#10005;</button>
+      </div>
+    `)
+    .join("");
+  dropdown.classList.remove("hidden");
+
+  dropdown.querySelectorAll(".dir-history-path").forEach((el) => {
+    el.addEventListener("click", () => {
+      document.getElementById("s-download-dir").value = el.title;
+      dropdown.classList.add("hidden");
+    });
+  });
+
+  dropdown.querySelectorAll(".dir-history-remove").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await removeDirHistory(btn.dataset.dir);
+      renderDirHistory();
+    });
+  });
+}
+
+function winToWsl(path) {
+  const m = path.trim().match(/^([A-Za-z]):[\\\/](.*)$/);
+  if (!m) return path;
+  const drive = m[1].toLowerCase();
+  const rest = m[2].replace(/\\/g, "/");
+  return `/mnt/${drive}/${rest}`;
+}
+
+const dirInput = document.getElementById("s-download-dir");
+dirInput.addEventListener("focus", renderDirHistory);
+dirInput.addEventListener("click", renderDirHistory);
+dirInput.addEventListener("blur", () => {
+  const converted = winToWsl(dirInput.value);
+  if (converted !== dirInput.value) dirInput.value = converted;
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".dir-wrapper")) {
+    document.getElementById("dir-history").classList.add("hidden");
   }
 });
 
