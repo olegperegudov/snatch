@@ -93,6 +93,17 @@ def add_to_history(item):
     save_history(history)
 
 
+def _mark_skipped(page_url: str, title: str = ""):
+    """Update the last_skipped timestamp on the existing history entry."""
+    history = load_history()
+    h = _url_hash(page_url)
+    for entry in history:
+        if entry["hash"] == h:
+            entry["last_skipped"] = time.time()
+            break
+    save_history(history)
+
+
 class UrlRequest(BaseModel):
     url: str
 
@@ -101,12 +112,15 @@ class DownloadRequest(BaseModel):
     url: str
     page_url: str = ""
     title: str = ""
+    force: bool = False
 
 
 @app.post("/download")
 async def add_download(req: DownloadRequest):
-    # Check history if skip_downloaded is enabled
-    if settings.get("skip_downloaded") and req.page_url and is_in_history(req.page_url):
+    # Check history if skip_downloaded is enabled (unless force)
+    if not req.force and settings.get("skip_downloaded") and req.page_url and is_in_history(req.page_url):
+        # Mark as skipped in history for UI
+        _mark_skipped(req.page_url, req.title)
         return {"ok": False, "reason": "already_downloaded"}
     item = queue.add(req.url, req.page_url, req.title)
     asyncio.create_task(_run_download(item.id))
@@ -175,15 +189,29 @@ async def reveal_file(item_id: str):
 
 @app.post("/reveal_file")
 async def reveal_by_filename(req: dict):
-    """Reveal a completed file by filename."""
+    """Reveal a completed file by filename. Falls back to opening the folder."""
     filename = req.get("filename", "")
-    if not filename:
-        return {"ok": False, "error": "no filename"}
-    filepath = Path(settings["download_dir"]) / filename
-    if not filepath.exists():
-        return {"ok": False, "error": "file missing on disk"}
-    _reveal_in_explorer(filepath)
-    return {"ok": True}
+    dl_dir = Path(settings["download_dir"])
+    if filename:
+        filepath = dl_dir / filename
+        if filepath.exists():
+            _reveal_in_explorer(filepath)
+            return {"ok": True}
+    # File missing or no filename — just open the download folder
+    _open_folder(dl_dir)
+    return {"ok": True, "fallback": "folder"}
+
+
+def _open_folder(folder: Path):
+    """Open a folder in the file manager."""
+    if sys.platform == "win32":
+        subprocess.Popen(["explorer", str(folder)])
+    else:
+        try:
+            win_path = subprocess.check_output(["wslpath", "-w", str(folder)], text=True).strip()
+            subprocess.Popen(["explorer.exe", win_path])
+        except FileNotFoundError:
+            subprocess.Popen(["xdg-open", str(folder)])
 
 
 def _reveal_in_explorer(filepath: Path):

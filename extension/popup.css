@@ -108,10 +108,38 @@ body {
   font-size: 11px;
   cursor: pointer;
   white-space: nowrap;
-  margin-left: 8px;
 }
 .dl-btn:hover { background: #45a049; }
 .dl-btn:disabled { background: #555; color: #888; cursor: default; }
+
+.detected-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.force-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.force-btn:hover { background: #e53935; }
+
+.dl-done-label { font-size: 11px; color: #888; }
+.dl-queued-label { font-size: 11px; color: #4CAF50; }
+.dl-error-label { font-size: 11px; color: #f44336; }
 
 /* Queue items */
 #queue-section { border-top: 1px solid #333; }
@@ -176,7 +204,22 @@ body {
 .status-cancelled .item-title { color: #666; text-decoration: line-through; }
 .status-pending .item-title { color: #999; }
 
+/* Clickable titles */
+.item-title[data-url], .completed-title[data-url] {
+  cursor: pointer;
+}
+.item-title[data-url]:hover, .completed-title[data-url]:hover {
+  text-decoration: underline;
+}
+
 /* Completed items */
+.completed-skipped {
+  background: rgba(255, 193, 7, 0.08);
+}
+.completed-skipped .completed-title {
+  color: #b8962e;
+}
+
 .completed-item {
   display: flex;
   justify-content: space-between;

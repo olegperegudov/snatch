@@ -104,38 +104,48 @@ async function loadDetected() {
           <span class="detected-tag">${v.resolution}</span>
           <span class="detected-title" title="${esc(title)}">${esc(shortTitle)}</span>
         </div>
-        <button class="dl-btn" data-idx="${i}">Download</button>
+        <div class="detected-actions">
+          <button class="force-btn" data-idx="${i}" title="Force download (ignore history)">f</button>
+          <button class="dl-btn" data-idx="${i}">Download</button>
+        </div>
       </div>
     `)
     .join("");
 
+  // Download button
   list.querySelectorAll(".dl-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const v = filtered[btn.dataset.idx];
-      try {
-        const dlRes = await fetch(`${DAEMON}/download`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: v.url,
-            page_url: currentTab.url,
-            title: `${currentTab.title} [${v.resolution}]`,
-          }),
-        });
-        const dlData = await dlRes.json();
-        if (dlData.reason === "already_downloaded") {
-          btn.textContent = "Done";
-          btn.disabled = true;
-        } else {
-          btn.textContent = "Queued";
-          btn.disabled = true;
-          loadQueue();
-        }
-      } catch {
-        btn.textContent = "Error";
-      }
-    });
+    btn.addEventListener("click", () => doDownload(btn, filtered[btn.dataset.idx], false));
   });
+
+  // Force button
+  list.querySelectorAll(".force-btn").forEach((btn) => {
+    btn.addEventListener("click", () => doDownload(btn, filtered[btn.dataset.idx], true));
+  });
+
+  async function doDownload(btn, v, force) {
+    const row = btn.closest(".detected-actions");
+    try {
+      const dlRes = await fetch(`${DAEMON}/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: v.url,
+          page_url: currentTab.url,
+          title: `${currentTab.title} [${v.resolution}]`,
+          force,
+        }),
+      });
+      const dlData = await dlRes.json();
+      if (dlData.reason === "already_downloaded") {
+        row.innerHTML = '<span class="dl-done-label">Done</span>';
+      } else {
+        row.innerHTML = '<span class="dl-queued-label">Queued</span>';
+        loadQueue();
+      }
+    } catch {
+      row.innerHTML = '<span class="dl-error-label">Error</span>';
+    }
+  }
 }
 
 // --- Queue ---
@@ -184,7 +194,7 @@ function renderQueue(items) {
       return `
         <div class="item ${statusClass}">
           <div class="item-header">
-            <span class="item-title" title="${esc(title)}">${esc(title)}</span>
+            <span class="item-title" ${item.page_url ? `data-url="${esc(item.page_url)}"` : ""} title="${esc(title)}">${esc(title)}</span>
             ${showCancel ? `<button class="item-cancel" data-id="${item.id}" title="Cancel">&#10005;</button>` : ""}
           </div>
           ${showProgress ? `
@@ -200,6 +210,13 @@ function renderQueue(items) {
       `;
     })
     .join("");
+
+  // Clickable titles — open page_url
+  list.querySelectorAll(".item-title[data-url]").forEach((el) => {
+    el.addEventListener("click", () => {
+      chrome.tabs.create({ url: el.dataset.url });
+    });
+  });
 
   // Cancel button
   list.querySelectorAll(".item-cancel").forEach((btn) => {
@@ -239,12 +256,13 @@ function renderCompleted(items) {
         ? shortTitle + "..." : shortTitle;
       let domain = "";
       try { domain = new URL(item.page_url).hostname; } catch {}
+      const skipped = item.last_skipped && (item.last_skipped > (item.completed_at || 0));
 
       return `
-        <div class="completed-item">
+        <div class="completed-item${skipped ? " completed-skipped" : ""}" title="${skipped ? "Skipped (already downloaded)" : ""}"">
           <div class="completed-main">
             ${item.resolution ? `<span class="detected-tag">${esc(item.resolution)}</span>` : ""}
-            <span class="completed-title" title="${esc(item.title || "")}">${esc(displayTitle)}</span>
+            <span class="completed-title" ${item.page_url ? `data-url="${esc(item.page_url)}"` : ""} title="${esc(item.title || "")}">${esc(displayTitle)}</span>
           </div>
           <div class="completed-meta">
             ${domain ? `<span class="completed-url" data-url="${esc(item.page_url)}" title="${esc(item.page_url)}">${esc(domain)}</span>` : ""}
@@ -254,6 +272,13 @@ function renderCompleted(items) {
       `;
     })
     .join("");
+
+  // Clickable titles — open page_url
+  list.querySelectorAll(".completed-title[data-url]").forEach((el) => {
+    el.addEventListener("click", () => {
+      chrome.tabs.create({ url: el.dataset.url });
+    });
+  });
 
   // URL click — open in current window (works in incognito too)
   list.querySelectorAll(".completed-url").forEach((el) => {
