@@ -481,7 +481,9 @@ async fn fetch_latest_release() -> Result<(String, String), String> {
         return Err(format!("GitHub API returned {}", resp.status()));
     }
 
-    let json: Value = resp.json().await
+    let text = resp.text().await
+        .map_err(|e| format!("Read error: {e}"))?;
+    let json: Value = serde_json::from_str(&text)
         .map_err(|e| format!("Parse error: {e}"))?;
 
     let tag = json["tag_name"].as_str()
