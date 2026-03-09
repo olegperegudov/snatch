@@ -7,6 +7,15 @@ use crate::db::Db;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+/// Remove characters invalid in Windows filenames
+fn sanitize_filename(s: &str) -> String {
+    let s: String = s.chars().map(|c| match c {
+        '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+        _ => c,
+    }).collect();
+    s.trim().to_string()
+}
+
 /// Find yt-dlp binary: bundled sidecar first, then PATH
 fn find_ytdlp() -> PathBuf {
     // Check next to our executable (Tauri sidecar)
@@ -34,7 +43,7 @@ pub async fn download(
     preferred_resolution: String,
     force_overwrite: bool,
 ) {
-    let url = {
+    let (url, title) = {
         let mut lock = items.lock().await;
         let item = match lock.get_mut(&item_id) {
             Some(i) => i,
@@ -45,7 +54,7 @@ pub async fn download(
         }
         item.status = Status::Downloading;
         db.update_status(&item_id, "downloading");
-        item.url.clone()
+        (item.url.clone(), item.title.clone())
     };
 
     let ytdlp = find_ytdlp();
@@ -61,7 +70,13 @@ pub async fn download(
         }
     };
 
-    let output_template = dir.join("%(title)s [%(height)sp].%(ext)s");
+    // Use page title from extension if available, fall back to yt-dlp metadata
+    let sanitized = sanitize_filename(&title);
+    let output_template = if sanitized.is_empty() {
+        dir.join("%(title)s [%(height)sp].%(ext)s")
+    } else {
+        dir.join(format!("{sanitized}.%(ext)s"))
+    };
 
     let mut cmd = Command::new(&ytdlp);
     cmd.args([

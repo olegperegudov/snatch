@@ -278,6 +278,14 @@ async function loadSettings() {
   } catch {}
 }
 
+// Enter key saves settings from any input field
+$("settings").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.matches("input")) {
+    e.preventDefault();
+    $("s-save").click();
+  }
+});
+
 $("s-save").addEventListener("click", async () => {
   const dir = $("s-download-dir").value.trim();
   const settings = {
