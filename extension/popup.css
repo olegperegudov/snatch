@@ -27,6 +27,11 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
 body {
   width: 380px;
   min-height: 100px;
@@ -36,7 +41,7 @@ body {
   font-size: 11px;
   color: var(--text);
   background: var(--bg);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .hidden { display: none !important; }
@@ -55,7 +60,7 @@ header {
   padding: 8px 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  border-radius: 8px 8px 0 0;
+  border-radius: 10px 10px 0 0;
   position: sticky;
   top: 0;
   z-index: 10;
