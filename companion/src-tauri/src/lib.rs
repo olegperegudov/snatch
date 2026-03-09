@@ -5,16 +5,8 @@ mod server;
 
 use server::{AppState, Settings, db_path, settings_path, start_server};
 use std::sync::Arc;
-use tauri::{
-    Manager,
-    menu::{Menu, MenuItem},
-    tray::TrayIconBuilder,
-};
-
-#[tauri::command]
-fn get_status() -> String {
-    "ok".to_string()
-}
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::TrayIconBuilder;
 
 pub fn run() {
     // Init DB
@@ -45,7 +37,6 @@ pub fn run() {
                     row.page_url,
                     row.title.unwrap_or_default(),
                 ).await;
-                // Set status to paused (recovered)
                 let mut items = state.queue.items.lock().await;
                 if let Some(item) = items.get_mut(&id) {
                     item.status = queue::Status::Paused;
@@ -54,7 +45,7 @@ pub fn run() {
         });
     }
 
-    // Start HTTP server on a background thread
+    // Start HTTP server on background thread
     let server_state = state.clone();
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
@@ -62,10 +53,8 @@ pub fn run() {
     });
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_status])
         .setup(|app| {
-            // System tray — single "Stop" action
+            // Tray: right-click → "Stop Snatch"
             let stop_i = MenuItem::with_id(app, "stop", "Stop Snatch", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&stop_i])?;
 
@@ -75,19 +64,6 @@ pub fn run() {
                 .on_menu_event(|app, event| {
                     if event.id().as_ref() == "stop" {
                         app.exit(0);
-                    }
-                })
-                .on_tray_icon_event(|tray, event| {
-                    // Left-click toggles window
-                    if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
-                        if let Some(w) = tray.app_handle().get_webview_window("main") {
-                            if w.is_visible().unwrap_or(false) {
-                                w.hide().ok();
-                            } else {
-                                w.show().ok();
-                                w.set_focus().ok();
-                            }
-                        }
                     }
                 })
                 .build(app)?;

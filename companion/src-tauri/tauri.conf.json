@@ -1,28 +1,18 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedoc/tauri/dev/packages/cli/schema.json",
-  "productName": "Snatch Companion",
+  "productName": "Snatch",
   "version": "0.1.0",
   "identifier": "com.snatch.companion",
   "build": {
     "frontendDist": "../src"
   },
   "app": {
-    "withGlobalTauri": true,
-    "windows": [
-      {
-        "title": "Snatch",
-        "width": 420,
-        "height": 520,
-        "resizable": true,
-        "decorations": true,
-        "center": true,
-        "visible": false
-      }
-    ],
+    "withGlobalTauri": false,
+    "windows": [],
     "trayIcon": {
       "id": "main",
       "iconPath": "icons/icon.png",
-      "tooltip": "Snatch Companion"
+      "tooltip": "Snatch — running"
     }
   },
   "bundle": {
