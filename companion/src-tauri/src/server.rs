@@ -95,6 +95,8 @@ pub async fn start_server(state: Arc<AppState>) {
         .route("/stop_queue", post(stop_queue))
         .route("/reveal_file", post(reveal_file))
         .route("/history/check", post(check_history))
+        .route("/check-update", get(check_update))
+        .route("/update", post(do_update))
         .layer(CorsLayer::very_permissive())
         .with_state(state);
 
@@ -446,4 +448,124 @@ async fn probe_url(Json(req): Json<ProbeRequest>) -> Json<Value> {
 
     variants.sort_by(|a, b| b["height"].as_u64().cmp(&a["height"].as_u64()));
     Json(json!({"variants": variants}))
+}
+
+// --- Auto-update ---
+
+const GITHUB_REPO: &str = "olegperegudov/snatch";
+
+fn version_newer(latest: &str, current: &str) -> bool {
+    let parse = |s: &str| -> Vec<u32> {
+        s.split('.').filter_map(|p| p.parse().ok()).collect()
+    };
+    let l = parse(latest);
+    let c = parse(current);
+    for i in 0..3 {
+        let lv = l.get(i).unwrap_or(&0);
+        let cv = c.get(i).unwrap_or(&0);
+        if lv > cv { return true; }
+        if lv < cv { return false; }
+    }
+    false
+}
+
+async fn fetch_latest_release() -> Result<(String, String), String> {
+    let url = format!("https://api.github.com/repos/{GITHUB_REPO}/releases/latest");
+    let client = reqwest::Client::new();
+    let resp = client.get(&url)
+        .header("User-Agent", "Snatch-Companion")
+        .send().await
+        .map_err(|e| format!("GitHub API error: {e}"))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("GitHub API returned {}", resp.status()));
+    }
+
+    let json: Value = resp.json().await
+        .map_err(|e| format!("Parse error: {e}"))?;
+
+    let tag = json["tag_name"].as_str()
+        .ok_or("No tag_name in release")?;
+    let version = tag.strip_prefix('v').unwrap_or(tag).to_string();
+
+    let download_url = json["assets"].as_array()
+        .and_then(|assets| assets.iter().find(|a| {
+            a["name"].as_str().map(|n| n.ends_with("-setup.exe")).unwrap_or(false)
+        }))
+        .and_then(|a| a["browser_download_url"].as_str())
+        .ok_or("No installer asset found in release")?
+        .to_string();
+
+    Ok((version, download_url))
+}
+
+async fn check_update() -> Json<Value> {
+    let current = env!("CARGO_PKG_VERSION");
+    match fetch_latest_release().await {
+        Ok((version, download_url)) => {
+            Json(json!({
+                "current": current,
+                "latest": version,
+                "update_available": version_newer(&version, current),
+                "download_url": download_url,
+            }))
+        }
+        Err(e) => Json(json!({
+            "current": current,
+            "error": e,
+        }))
+    }
+}
+
+async fn do_update() -> Json<Value> {
+    let current = env!("CARGO_PKG_VERSION");
+
+    let (version, download_url) = match fetch_latest_release().await {
+        Ok(r) => r,
+        Err(e) => return Json(json!({"ok": false, "error": e})),
+    };
+
+    if !version_newer(&version, current) {
+        return Json(json!({"ok": false, "error": "Already up to date"}));
+    }
+
+    // Download installer to temp
+    let temp_dir = std::env::temp_dir();
+    let installer_path = temp_dir.join(format!("Snatch_{version}_x64-setup.exe"));
+
+    let response = match reqwest::get(&download_url).await {
+        Ok(r) => r,
+        Err(e) => return Json(json!({"ok": false, "error": format!("Download failed: {e}")})),
+    };
+
+    let bytes = match response.bytes().await {
+        Ok(b) => b,
+        Err(e) => return Json(json!({"ok": false, "error": format!("Download failed: {e}")})),
+    };
+
+    if let Err(e) = std::fs::write(&installer_path, &bytes) {
+        return Json(json!({"ok": false, "error": format!("Save failed: {e}")}));
+    }
+
+    // Launch installer silently and exit
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command as StdCommand;
+        match StdCommand::new(&installer_path).arg("/S").spawn() {
+            Ok(_) => {
+                // Give the HTTP response time to send, then exit
+                tokio::spawn(async {
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    std::process::exit(0);
+                });
+                Json(json!({"ok": true, "version": version}))
+            }
+            Err(e) => Json(json!({"ok": false, "error": format!("Failed to launch installer: {e}")})),
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        Json(json!({"ok": false, "error": "Auto-update only supported on Windows"}))
+    }
 }

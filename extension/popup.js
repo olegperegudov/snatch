@@ -340,11 +340,24 @@ document.addEventListener("click", (e) => {
 });
 
 // --- Daemon health + companion banner ---
-function showBanner(text, linkText) {
+function showBanner(text, { link, update } = {}) {
   const banner = $("companion-banner");
+  const linkEl = $("banner-link");
+  const updateEl = $("banner-update");
   $("banner-text").textContent = text;
-  $("banner-link").textContent = linkText;
-  $("banner-link").href = RELEASES_URL;
+  if (link) {
+    linkEl.textContent = link;
+    linkEl.href = RELEASES_URL;
+    linkEl.classList.remove("hidden");
+  } else {
+    linkEl.classList.add("hidden");
+  }
+  if (update) {
+    updateEl.textContent = update;
+    updateEl.classList.remove("hidden");
+  } else {
+    updateEl.classList.add("hidden");
+  }
   banner.classList.remove("hidden");
 }
 
@@ -368,15 +381,47 @@ async function checkDaemon() {
     dot.className = "dot online";
     dot.title = SnatchAPI.getMode() === "native" ? "Connected (native)" : "Daemon online";
     if (res && res.version && versionCompare(res.version, MIN_COMPANION) < 0) {
-      showBanner(`Companion outdated (${res.version})`, "Update");
+      showBanner(`Companion outdated (${res.version})`, { update: "Update" });
     } else {
       hideBanner();
     }
   } catch {
     dot.className = "dot offline";
     dot.title = "Daemon offline";
-    showBanner("Companion app not running", "Get Companion");
+    showBanner("Companion app not running", { link: "Get Companion" });
   }
 }
+
+// --- Update button ---
+$("banner-update").addEventListener("click", async () => {
+  const btn = $("banner-update");
+  btn.textContent = "Updating...";
+  btn.disabled = true;
+  try {
+    const res = await SnatchAPI.update();
+    if (res && res.ok) {
+      $("banner-text").textContent = `Installing v${res.version}...`;
+      btn.classList.add("hidden");
+      // Companion exits — poll until it comes back
+      setTimeout(async function poll() {
+        try {
+          await SnatchAPI.health();
+          hideBanner();
+          checkDaemon();
+        } catch {
+          setTimeout(poll, 2000);
+        }
+      }, 3000);
+    } else {
+      $("banner-text").textContent = res?.error || "Update failed";
+      btn.textContent = "Retry";
+      btn.disabled = false;
+    }
+  } catch {
+    $("banner-text").textContent = "Update failed — companion offline";
+    btn.textContent = "Retry";
+    btn.disabled = false;
+  }
+});
 
 init();

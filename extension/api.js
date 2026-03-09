@@ -145,6 +145,8 @@ const SnatchAPI = (() => {
     pause:        ["POST",   "/pause"],
     start_queue:  ["POST",   "/start_queue"],
     stop_queue:   ["POST",   "/stop_queue"],
+    check_update: ["GET",    "/check-update"],
+    do_update:    ["POST",   "/update"],
   };
 
   async function request(action, data) {
@@ -202,5 +204,7 @@ const SnatchAPI = (() => {
     pause(id)             { return request("pause", { id }); },
     startQueue()          { return request("start_queue"); },
     stopQueue()           { return request("stop_queue"); },
+    checkUpdate()         { return request("check_update"); },
+    update()              { return request("do_update"); },
   };
 })();
