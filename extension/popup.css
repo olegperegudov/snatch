@@ -36,6 +36,7 @@ body {
   font-size: 11px;
   color: var(--text);
   background: var(--bg);
+  border-radius: 8px;
 }
 
 .hidden { display: none !important; }
@@ -54,12 +55,13 @@ header {
   padding: 8px 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.tabs { display: flex; gap: 2px; }
+.tabs { display: flex; gap: 2px; flex: 1; justify-content: center; }
 
 .tab {
   padding: 4px 12px;
@@ -156,14 +158,14 @@ header {
   color: var(--text-muted);
   padding: 8px 12px 4px;
   text-align: center;
-  border-top: 1px solid var(--border-subtle);
-  border-bottom: 1px solid var(--border-subtle);
 }
 
-.divider {
+.section-divider {
   border: none;
-  border-top: 1px solid var(--border-subtle);
-  margin: 0;
+  height: 1px;
+  margin: 10px 20px;
+  background: radial-gradient(ellipse at center, var(--text-muted) 0%, transparent 70%);
+  opacity: 0.4;
 }
 
 .empty {
