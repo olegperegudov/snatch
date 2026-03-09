@@ -64,15 +64,12 @@ pub async fn download(
 
     let mut cmd = Command::new(&ytdlp);
     cmd.args([
-        "--no-warnings",
         "--newline",
         "--progress",
         "--progress-template", "%(progress._percent_str)s %(progress._speed_str)s %(progress._eta_str)s",
         "-f", &format,
         "--merge-output-format", "mp4",
         "-o", output_template.to_str().unwrap_or("%(title)s.%(ext)s"),
-        "--concurrent-fragments", "8",
-        "--buffer-size", "1M",
         &url,
     ]);
     cmd.stdout(Stdio::piped());
@@ -96,6 +93,19 @@ pub async fn download(
             }
             return;
         }
+    };
+
+    // Read stderr in background to prevent pipe deadlock
+    let stderr_handle = {
+        let stderr = child.stderr.take().unwrap();
+        tokio::spawn(async move {
+            let mut lines = Vec::new();
+            let mut reader = BufReader::new(stderr).lines();
+            while let Ok(Some(line)) = reader.next_line().await {
+                lines.push(line);
+            }
+            lines
+        })
     };
 
     // Parse progress from stdout
@@ -164,17 +174,9 @@ pub async fn download(
         }
     }
 
-    // Capture stderr for error reporting
-    let stderr_text = if let Some(stderr) = child.stderr.take() {
-        let mut lines = Vec::new();
-        let mut reader = BufReader::new(stderr).lines();
-        while let Ok(Some(line)) = reader.next_line().await {
-            lines.push(line);
-        }
-        lines.join("\n")
-    } else {
-        String::new()
-    };
+    // Collect stderr
+    let stderr_lines = stderr_handle.await.unwrap_or_default();
+    let stderr_text = stderr_lines.join("\n");
 
     let status = child.wait().await;
     let mut lock = items.lock().await;
