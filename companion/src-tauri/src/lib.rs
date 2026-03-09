@@ -58,20 +58,16 @@ pub fn run() {
             let stop_i = MenuItem::with_id(app, "stop", "Stop Snatch", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&stop_i])?;
 
-            let mut tray_builder = TrayIconBuilder::new()
+            let _tray = TrayIconBuilder::new()
+                .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png"))?)
                 .menu(&menu)
                 .tooltip("Snatch — running on :9111")
                 .on_menu_event(|app, event| {
                     if event.id().as_ref() == "stop" {
                         app.exit(0);
                     }
-                });
-
-            if let Some(icon) = app.default_window_icon() {
-                tray_builder = tray_builder.icon(icon.clone());
-            }
-
-            let _tray = tray_builder.build(app)?;
+                })
+                .build(app)?;
 
             Ok(())
         })
