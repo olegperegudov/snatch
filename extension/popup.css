@@ -156,6 +156,30 @@ header {
   box-shadow: 0 0 6px var(--fail-border);
 }
 
+/* --- Companion banner --- */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--warn-bg);
+  border-bottom: 1px solid var(--warn-border);
+  font-size: 10px;
+  color: var(--warn);
+}
+.banner-btn {
+  color: var(--warn);
+  border: 1px solid var(--warn-border);
+  border-radius: 4px;
+  padding: 2px 10px;
+  font: 500 10px var(--font);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.banner-btn:hover { background: var(--warn-border); }
+
 /* --- Panels & sections --- */
 .panel { padding: 0; }
 
@@ -402,10 +426,10 @@ header {
 
 /* --- Settings --- */
 .settings-body {
-  padding: 8px 12px 12px;
+  padding: 10px 12px 14px;
 }
 
-.settings-body label {
+.settings-body label:not(.toggle) {
   display: block;
   margin-bottom: 10px;
   color: var(--text-dim);
@@ -449,12 +473,10 @@ header {
   transition: all 0.2s;
 }
 #s-save:hover { background: var(--ok-bg); border-color: var(--ok); }
-
-#s-status {
-  text-align: center;
-  margin-top: 6px;
-  font-size: 10px;
-  color: var(--ok);
+#s-save.saved { animation: save-pulse 0.4s ease-out; }
+@keyframes save-pulse {
+  0% { background: var(--ok-border); border-color: var(--ok); }
+  100% { background: none; border-color: var(--ok-border); }
 }
 
 /* --- Dir history dropdown --- */

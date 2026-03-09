@@ -1,3 +1,6 @@
+const RELEASES_URL = "https://github.com/olegperegudov/snatch/releases/latest";
+const MIN_COMPANION = "0.1.0";
+
 let currentTab = null;
 let autoDl = true;
 let currentSettings = {};
@@ -40,9 +43,17 @@ $$(".tab").forEach((tab) => {
 $("settings-btn").addEventListener("click", () => {
   const s = $("settings");
   const isHidden = s.classList.contains("hidden");
-  $$(".panel").forEach((p) => p.classList.toggle("hidden", isHidden));
-  s.classList.toggle("hidden", !isHidden);
-  if (isHidden) loadSettings();
+  if (isHidden) {
+    // Hide all panels, show settings
+    $$(".panel").forEach((p) => p.classList.add("hidden"));
+    s.classList.remove("hidden");
+    loadSettings();
+  } else {
+    // Hide settings, restore active tab panel
+    s.classList.add("hidden");
+    const activeTab = document.querySelector(".tab.active");
+    if (activeTab) $(`tab-${activeTab.dataset.tab}`).classList.remove("hidden");
+  }
 });
 
 // --- Init ---
@@ -280,13 +291,11 @@ $("s-save").addEventListener("click", async () => {
     await SnatchAPI.putSettings(settings);
     currentSettings = settings;
     if (dir) addToDirHistory(dir);
-    $("s-status").textContent = "Saved!";
-    setTimeout(() => ($("s-status").textContent = ""), 2000);
-  } catch {
-    $("s-status").textContent = "Failed — daemon offline?";
-    $("s-status").style.color = "var(--fail)";
-    setTimeout(() => { $("s-status").textContent = ""; $("s-status").style.color = ""; }, 3000);
-  }
+    const btn = $("s-save");
+    btn.classList.remove("saved");
+    void btn.offsetWidth;
+    btn.classList.add("saved");
+  } catch {}
 });
 
 // --- Dir history ---
@@ -330,16 +339,43 @@ document.addEventListener("click", (e) => {
   if (!e.target.closest(".dir-wrapper")) $("dir-history").classList.add("hidden");
 });
 
-// --- Daemon health ---
+// --- Daemon health + companion banner ---
+function showBanner(text, linkText) {
+  const banner = $("companion-banner");
+  $("banner-text").textContent = text;
+  $("banner-link").textContent = linkText;
+  $("banner-link").href = RELEASES_URL;
+  banner.classList.remove("hidden");
+}
+
+function hideBanner() {
+  $("companion-banner").classList.add("hidden");
+}
+
+function versionCompare(a, b) {
+  const pa = a.split(".").map(Number), pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+    if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+  }
+  return 0;
+}
+
 async function checkDaemon() {
   const dot = $("status-dot");
   try {
-    await SnatchAPI.health();
+    const res = await SnatchAPI.health();
     dot.className = "dot online";
     dot.title = SnatchAPI.getMode() === "native" ? "Connected (native)" : "Daemon online";
+    if (res && res.version && versionCompare(res.version, MIN_COMPANION) < 0) {
+      showBanner(`Companion outdated (${res.version})`, "Update");
+    } else {
+      hideBanner();
+    }
   } catch {
     dot.className = "dot offline";
     dot.title = "Daemon offline";
+    showBanner("Companion app not running", "Get Companion");
   }
 }
 

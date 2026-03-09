@@ -106,7 +106,7 @@ pub async fn start_server(state: Arc<AppState>) {
 // --- Handlers ---
 
 async fn health() -> Json<Value> {
-    Json(json!({"status": "ok"}))
+    Json(json!({"status": "ok", "version": env!("CARGO_PKG_VERSION")}))
 }
 
 async fn get_queue(State(state): State<Arc<AppState>>) -> Json<Value> {

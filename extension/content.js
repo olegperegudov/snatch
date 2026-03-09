@@ -1,6 +1,6 @@
 // Hook XHR and fetch to catch video stream URLs that webRequest might miss
 (function () {
-  const VIDEO_PATTERNS = [".m3u8", ".mpd", ".ts?", "/videoplayback", "/manifest"];
+  const VIDEO_PATTERNS = [".m3u8", ".mpd", "/videoplayback"];
 
   function isVideoUrl(url) {
     if (typeof url !== "string") return false;

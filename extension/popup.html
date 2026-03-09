@@ -20,6 +20,12 @@
     </div>
   </header>
 
+  <!-- Companion banner -->
+  <div id="companion-banner" class="banner hidden">
+    <span id="banner-text">Companion app not found</span>
+    <a id="banner-link" class="banner-btn" target="_blank">Get Companion</a>
+  </div>
+
   <!-- Downloads -->
   <div id="tab-downloads" class="panel">
     <div id="detected-list"></div>
@@ -43,7 +49,6 @@
 
   <!-- Settings -->
   <div id="settings" class="panel hidden">
-    <div class="section-label">settings</div>
     <div class="settings-body">
       <div class="setting-row">
         <span>Auto-download</span>
@@ -84,7 +89,6 @@
         <input type="number" id="s-max-concurrent" min="1" max="10" value="2">
       </label>
       <button id="s-save">Save</button>
-      <div id="s-status"></div>
     </div>
   </div>
 
