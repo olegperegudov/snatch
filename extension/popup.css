@@ -61,7 +61,13 @@ header {
   z-index: 10;
 }
 
-.tabs { display: flex; gap: 2px; flex: 1; justify-content: center; }
+.tabs {
+  display: flex;
+  gap: 2px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
 
 .tab {
   padding: 4px 12px;
