@@ -1,7 +1,17 @@
-const DAEMON = "http://127.0.0.1:9111";
+importScripts("api.js");
 
 // Store detected video URLs per tab: tabId -> [{url, type, label}]
 const tabVideos = new Map();
+
+// --- Init: detect communication mode ---
+SnatchAPI.detectMode().then((mode) => {
+  console.log(`[Snatch] Background started, mode: ${mode}`);
+});
+
+// Register push handler for native mode queue updates
+SnatchAPI.onQueueUpdate((data) => {
+  updateBadgeFromItems((data && data.items) || []);
+});
 
 // --- Intercept video stream URLs via webRequest ---
 chrome.webRequest.onBeforeRequest.addListener(
@@ -135,11 +145,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!url) return;
 
   try {
-    await fetch(`${DAEMON}/download`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, page_url: tab.url, title }),
-    });
+    await SnatchAPI.download({ url, page_url: tab.url, title });
     updateDownloadBadge();
   } catch (e) {
     // briefly show error, then resume normal badge
@@ -211,30 +217,73 @@ function makeLabel(url) {
   return parts.join(" | ");
 }
 
-// --- Download count badge (polls daemon queue) ---
-let badgePollInterval = null;
+// --- Download count badge ---
+function updateBadgeFromItems(items) {
+  const active = items.filter((i) => i.status === "downloading" || i.status === "pending" || i.status === "paused");
+  const downloading = items.filter((i) => i.status === "downloading").length;
+
+  if (!active.length) {
+    chrome.action.setBadgeText({ text: "" });
+    return;
+  }
+
+  const text = downloading > 0 ? `${downloading}/${active.length}` : String(active.length);
+  chrome.action.setBadgeBackgroundColor({ color: downloading > 0 ? "#22c55e" : "#eab308" });
+  chrome.action.setBadgeText({ text });
+}
 
 async function updateDownloadBadge() {
   try {
-    const res = await fetch(`${DAEMON}/queue`);
-    const data = await res.json();
-    const items = data.items || [];
-    const downloading = items.filter((i) => i.status === "downloading").length;
-    const pending = items.filter((i) => i.status === "pending").length;
-
-    if (downloading === 0 && pending === 0) {
-      chrome.action.setBadgeText({ text: "" });
-      return;
-    }
-
-    const text = downloading > 0 ? `${pending}|${downloading}` : String(pending);
-    chrome.action.setBadgeBackgroundColor({ color: downloading > 0 ? "#4CAF50" : "#FFC107" });
-    chrome.action.setBadgeText({ text });
+    const data = await SnatchAPI.queue();
+    updateBadgeFromItems((data && data.items) || []);
   } catch {
     chrome.action.setBadgeText({ text: "" });
   }
 }
 
-// Poll every 2 seconds
-badgePollInterval = setInterval(updateDownloadBadge, 2000);
+// --- Icon color based on daemon status ---
+let _daemonOnline = false;
+
+async function tintIcon(online) {
+  if (online === _daemonOnline) return;
+  _daemonOnline = online;
+
+  const imageData = {};
+  for (const size of [16, 48, 128]) {
+    const resp = await fetch(`icons/icon${size}.png`);
+    const bitmap = await createImageBitmap(await resp.blob());
+    const canvas = new OffscreenCanvas(size, size);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0);
+    const img = ctx.getImageData(0, 0, size, size);
+
+    if (!online) {
+      const d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i + 1], b = d[i + 2];
+        // Shift green pixels → amber/yellow
+        if (g > r * 1.2 && g > b * 1.5) {
+          d[i]     = Math.min(255, Math.floor(g * 1.45)); // R up
+          d[i + 1] = Math.floor(g * 0.78);                // G down
+          d[i + 2] = Math.floor(b * 0.15);                // B ~0
+        }
+      }
+    }
+    imageData[size] = img;
+  }
+  chrome.action.setIcon({ imageData });
+}
+
+async function checkDaemonHealth() {
+  try {
+    await SnatchAPI.health();
+    tintIcon(true);
+  } catch {
+    tintIcon(false);
+  }
+}
+
+// Poll every 2 seconds (HTTP mode fallback; native mode uses push updates)
+setInterval(() => { updateDownloadBadge(); checkDaemonHealth(); }, 2000);
 updateDownloadBadge();
+checkDaemonHealth();

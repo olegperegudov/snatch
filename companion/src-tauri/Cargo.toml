@@ -1,0 +1,33 @@
+[package]
+name = "snatch-companion"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "snatch_companion_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+axum = "0.8"
+tower-http = { version = "0.6", features = ["cors"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+uuid = { version = "1", features = ["v4"] }
+sha2 = "0.10"
+url = "2"
+chrono = "0.4"
+dirs = "6"
+reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }
+regex-lite = "0.1"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1

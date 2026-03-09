@@ -4,3 +4,13 @@ __pycache__/
 settings.json
 history.json
 queue_state.json
+*.db
+*.db-wal
+*.db-shm
+
+# Tauri build artifacts
+companion/src-tauri/target/
+companion/node_modules/
+
+# Sidecar binaries (downloaded at build time)
+companion/src-tauri/binaries/*.exe

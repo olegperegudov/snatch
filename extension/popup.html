@@ -2,72 +2,79 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="tab-bar">
-    <div class="tab active" data-tab="downloads">Downloads</div>
-    <div class="tab" data-tab="completed">Completed</div>
-    <div id="settings-btn" title="Settings">&#9881;</div>
+  <header>
+    <nav class="tabs">
+      <button class="tab active" data-tab="downloads">Downloads</button>
+      <button class="tab" data-tab="completed">Completed</button>
+    </nav>
+    <div class="header-right">
+      <label class="toggle" title="Start downloads automatically">
+        <input type="checkbox" id="auto-dl" checked>
+        <span class="toggle-track"></span>
+        <span class="toggle-label">auto</span>
+      </label>
+      <button id="settings-btn" title="Settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+      <span id="status-dot" class="dot offline" title="Daemon offline"></span>
+    </div>
+  </header>
+
+  <!-- Downloads -->
+  <div id="tab-downloads" class="panel">
+    <div id="detected-list"></div>
+    <div id="detected-empty" class="empty">No streams on this page</div>
+    <div class="section-label">downloading</div>
+    <div id="queue-list"></div>
+    <div id="queue-empty" class="empty">Empty</div>
   </div>
 
-  <!-- Downloads tab: detected + queue -->
-  <div id="tab-downloads" class="tab-content">
-    <div id="detected-section">
-      <div class="section-label">Detected</div>
-      <div id="detected-list"></div>
-      <div id="detected-empty" class="empty-small">No streams on this page</div>
+  <!-- Completed -->
+  <div id="tab-completed" class="panel hidden">
+    <div class="search-row">
+      <input type="text" id="completed-search" placeholder="Search..." autocomplete="off">
+      <button id="open-folder-btn" title="Open download folder">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      </button>
     </div>
-
-    <div id="queue-section">
-      <div class="section-label">Queue</div>
-      <div id="queue-list"></div>
-      <div id="queue-empty" class="empty-small">Empty</div>
-    </div>
-  </div>
-
-  <!-- Completed tab -->
-  <div id="tab-completed" class="tab-content hidden">
     <div id="completed-list"></div>
-    <div id="completed-empty" class="empty-small">No downloads yet</div>
+    <div id="completed-empty" class="empty">No downloads yet</div>
   </div>
 
-  <!-- Settings view (hidden by default) -->
-  <div id="settings" class="hidden">
-    <label>
-      Resolution
-      <select id="s-resolution">
-        <option value="best">Best</option>
-        <option value="1080p">1080p</option>
-        <option value="720p">720p</option>
-        <option value="480p">480p</option>
-      </select>
-    </label>
-    <label class="checkbox-label">
-      <input type="checkbox" id="s-filter-res">
-      Only show selected resolution
-    </label>
-    <label class="checkbox-label">
-      <input type="checkbox" id="s-skip-downloaded">
-      Skip already downloaded
-    </label>
-    <label>
-      Download folder
-      <div class="dir-wrapper">
-        <input type="text" id="s-download-dir" placeholder="~/Downloads">
-        <div id="dir-history" class="dir-history hidden"></div>
-      </div>
-    </label>
-    <label>
-      Max parallel downloads
-      <input type="number" id="s-max-concurrent" min="1" max="10" value="2">
-    </label>
-    <button id="s-save">Save</button>
-    <div id="s-status"></div>
+  <!-- Settings -->
+  <div id="settings" class="panel hidden">
+    <div class="section-label">settings</div>
+    <div class="settings-body">
+      <label><span>Resolution</span>
+        <select id="s-resolution">
+          <option value="best">Best</option>
+          <option value="1080p">1080p</option>
+          <option value="720p">720p</option>
+          <option value="480p">480p</option>
+        </select>
+      </label>
+      <label class="check-row"><input type="checkbox" id="s-filter-res"><span>Only show selected resolution</span></label>
+      <label class="check-row"><input type="checkbox" id="s-skip-downloaded"><span>Skip already downloaded</span></label>
+      <label><span>Download folder</span>
+        <div class="dir-wrapper">
+          <input type="text" id="s-download-dir" placeholder="~/Downloads">
+          <div id="dir-history" class="dir-history hidden"></div>
+        </div>
+      </label>
+      <label><span>Max parallel</span>
+        <input type="number" id="s-max-concurrent" min="1" max="10" value="2">
+      </label>
+      <button id="s-save">Save</button>
+      <div id="s-status"></div>
+    </div>
   </div>
 
-  <div id="daemon-status" class="daemon-offline">Daemon offline</div>
-
+  <script src="api.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

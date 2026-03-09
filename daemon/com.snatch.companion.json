@@ -1,0 +1,9 @@
+{
+  "name": "com.snatch.companion",
+  "description": "Snatch Companion - video download daemon bridge",
+  "path": "\\\\wsl.localhost\\Ubuntu\\home\\ubuntu\\snatch\\daemon\\snatch_native_host.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://mlflanebbdnaehnkldejopplffhafmih/"
+  ]
+}

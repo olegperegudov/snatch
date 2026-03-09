@@ -1,27 +1,47 @@
-const DAEMON = "http://127.0.0.1:9111";
-
 let currentTab = null;
-let pollInterval = null;
+let autoDl = true;
+let currentSettings = {};
+let _allCompleted = [];
+
+const $ = (s) => document.getElementById(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- Auto-download toggle ---
+chrome.storage.local.get("autoDl", (data) => {
+  autoDl = data.autoDl !== false;
+  $("auto-dl").checked = autoDl;
+});
+
+$("auto-dl").addEventListener("change", async (e) => {
+  autoDl = e.target.checked;
+  chrome.storage.local.set({ autoDl });
+  autoDl ? await SnatchAPI.startQueue() : await SnatchAPI.stopQueue();
+  loadQueue();
+});
 
 // --- Tab switching ---
-document.querySelectorAll(".tab").forEach((tab) => {
+$$(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach((c) => c.classList.add("hidden"));
+    $$(".tab").forEach((t) => t.classList.remove("active"));
+    $$(".panel").forEach((p) => p.classList.add("hidden"));
     tab.classList.add("active");
-    document.getElementById(`tab-${tab.dataset.tab}`).classList.remove("hidden");
-    // Hide settings when switching tabs
-    document.getElementById("settings").classList.add("hidden");
+    $(`tab-${tab.dataset.tab}`).classList.remove("hidden");
+    $("settings").classList.add("hidden");
   });
 });
 
 // --- Settings toggle ---
-document.getElementById("settings-btn").addEventListener("click", () => {
-  const settings = document.getElementById("settings");
-  const tabs = document.querySelectorAll(".tab-content");
-  const isHidden = settings.classList.contains("hidden");
-  tabs.forEach((t) => t.classList.toggle("hidden", isHidden));
-  settings.classList.toggle("hidden", !isHidden);
+$("settings-btn").addEventListener("click", () => {
+  const s = $("settings");
+  const isHidden = s.classList.contains("hidden");
+  $$(".panel").forEach((p) => p.classList.toggle("hidden", isHidden));
+  s.classList.toggle("hidden", !isHidden);
   if (isHidden) loadSettings();
 });
 
@@ -29,121 +49,101 @@ document.getElementById("settings-btn").addEventListener("click", () => {
 async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   currentTab = tab;
-
   loadDetected();
   loadQueue();
   loadCompleted();
   loadSettings();
   checkDaemon();
-
-  pollInterval = setInterval(() => { loadQueue(); loadCompleted(); }, 2000);
+  setInterval(() => { if (!document.hidden) { loadQueue(); loadCompleted(); } }, 2000);
 }
 
-// --- Detected videos ---
+// --- Detected ---
 async function loadDetected() {
   if (!currentTab) return;
-
-  const response = await chrome.runtime.sendMessage({
-    type: "get_videos",
-    tabId: currentTab.id,
-  });
-
+  const response = await chrome.runtime.sendMessage({ type: "get_videos", tabId: currentTab.id });
   const videos = response?.videos || [];
-  const list = document.getElementById("detected-list");
-  const empty = document.getElementById("detected-empty");
+  const list = $("detected-list"), empty = $("detected-empty");
 
-  if (videos.length === 0) {
-    list.innerHTML = "";
-    empty.style.display = "block";
-    return;
-  }
+  if (!videos.length) { list.innerHTML = ""; empty.style.display = ""; return; }
   empty.style.display = "none";
-  list.innerHTML = '<div class="empty-small">Probing streams...</div>';
 
-  // Probe each URL to get real resolutions
-  const allVariants = [];
-  for (const v of videos) {
-    try {
-      const res = await fetch(`${DAEMON}/probe`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: v.url }),
-      });
-      const data = await res.json();
-      for (const variant of data.variants || []) {
-        // Deduplicate by resolution (same resolution from different URLs = same stream)
-        if (!allVariants.some((x) => x.resolution === variant.resolution)) {
-          allVariants.push(variant);
-        }
-      }
-    } catch {
-      allVariants.push({ url: v.url, resolution: "unknown", type: v.type, height: 0 });
-    }
-  }
-
-  // Sort: highest resolution first
-  allVariants.sort((a, b) => (b.height || 0) - (a.height || 0));
-
-  // Filter by preferred resolution if enabled
-  let filtered = allVariants;
-  if (currentSettings.filter_resolution && currentSettings.preferred_resolution !== "best") {
-    const targetHeight = parseInt(currentSettings.preferred_resolution);
-    if (targetHeight) {
-      const match = allVariants.filter((v) => v.height === targetHeight);
-      if (match.length > 0) filtered = match;
-    }
-  }
-
+  const spinSvg = `<svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 11-6.2-8.6"/></svg>`;
   const title = currentTab.title || "";
-  const shortTitle = title.length > 30 ? title.slice(0, 27) + "..." : title;
 
-  list.innerHTML = filtered
-    .map((v, i) => `
-      <div class="detected-item">
-        <div class="detected-info">
-          <span class="detected-tag">${v.resolution}</span>
-          <span class="detected-title" title="${esc(title)}">${esc(shortTitle)}</span>
-        </div>
-        <div class="detected-actions">
-          <button class="force-btn" data-idx="${i}" title="Force download (ignore history)">f</button>
-          <button class="dl-btn" data-idx="${i}">Download</button>
-        </div>
+  // Single "probing" row
+  list.innerHTML = `
+    <div class="detected-item">
+      <div class="detected-info">
+        <span class="detected-title" title="${esc(title)}">${esc(title)}</span>
       </div>
-    `)
-    .join("");
+      <div class="detected-actions">${spinSvg}</div>
+    </div>
+  `;
 
-  // Download button
-  list.querySelectorAll(".dl-btn").forEach((btn) => {
-    btn.addEventListener("click", () => doDownload(btn, filtered[btn.dataset.idx], false));
+  // Probe all in parallel, dedupe by resolution
+  const variants = [];
+  const results = await Promise.allSettled(videos.map((v) => SnatchAPI.probe({ url: v.url })));
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") {
+      (r.value.variants || []).forEach((v) => {
+        if (!variants.some((x) => x.resolution === v.resolution)) variants.push(v);
+      });
+    } else {
+      variants.push({ url: videos[i].url, resolution: "unknown", type: videos[i].type, height: 0 });
+    }
   });
+  variants.sort((a, b) => (b.height || 0) - (a.height || 0));
 
-  // Force button
-  list.querySelectorAll(".force-btn").forEach((btn) => {
-    btn.addEventListener("click", () => doDownload(btn, filtered[btn.dataset.idx], true));
-  });
+  // Pick best match: exact resolution or next best (fallback = yellow)
+  let picked = variants[0]; // default: best available
+  let fallback = false;
+  if (currentSettings.filter_resolution && currentSettings.preferred_resolution !== "best") {
+    const h = parseInt(currentSettings.preferred_resolution);
+    if (h) {
+      const exact = variants.find((v) => v.height === h);
+      if (exact) {
+        picked = exact;
+      } else {
+        // Next lower resolution
+        const lower = variants.filter((v) => v.height < h).sort((a, b) => b.height - a.height);
+        picked = lower[0] || variants[0];
+        fallback = true;
+      }
+    }
+  }
+
+  if (!picked) { list.innerHTML = ""; empty.style.display = ""; return; }
+
+  list.innerHTML = `
+    <div class="detected-item${fallback ? " fallback" : ""}">
+      <div class="detected-info">
+        <span class="tag${fallback ? " tag-warn" : ""}">${picked.resolution}</span>
+        <span class="detected-title" title="${esc(title)}">${esc(title)}</span>
+      </div>
+      <div class="detected-actions">
+        <button class="btn-force" title="Force (ignore history)">f</button>
+        <button class="btn-dl">dl</button>
+      </div>
+    </div>
+  `;
+
+  list.querySelector(".btn-dl").addEventListener("click", (e) => doDownload(e.target, picked, false));
+  list.querySelector(".btn-force").addEventListener("click", (e) => doDownload(e.target, picked, true));
 
   async function doDownload(btn, v, force) {
     const row = btn.closest(".detected-actions");
     try {
-      const dlRes = await fetch(`${DAEMON}/download`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: v.url,
-          page_url: currentTab.url,
-          title: `${currentTab.title} [${v.resolution}]`,
-          force,
-        }),
+      const res = await SnatchAPI.download({
+        url: v.url, page_url: currentTab.url,
+        title: `${currentTab.title} [${v.resolution}]`,
+        force, auto_start: autoDl,
       });
-      const dlData = await dlRes.json();
-      if (dlData.reason === "already_downloaded") {
-        row.innerHTML = '<span class="dl-done-label">Done</span>';
-      } else {
-        row.innerHTML = '<span class="dl-queued-label">Queued</span>';
-        loadQueue();
-      }
+      row.innerHTML = res.reason === "already_downloaded"
+        ? '<span class="dl-status done">done</span>'
+        : '<span class="dl-status queued">queued</span>';
+      loadQueue();
     } catch {
-      row.innerHTML = '<span class="dl-error-label">Error</span>';
+      row.innerHTML = '<span class="dl-status error">error</span>';
     }
   }
 }
@@ -151,285 +151,196 @@ async function loadDetected() {
 // --- Queue ---
 async function loadQueue() {
   try {
-    const res = await fetch(`${DAEMON}/queue`);
-    const data = await res.json();
-    renderQueue(data.items);
-  } catch {
-    renderQueue([]);
-  }
+    const data = await SnatchAPI.queue();
+    renderQueue((data && data.items) || []);
+  } catch { renderQueue([]); }
 }
 
 function renderQueue(items) {
-  const list = document.getElementById("queue-list");
-  const empty = document.getElementById("queue-empty");
-
-  // Filter out done/cancelled — they auto-clear
+  const list = $("queue-list"), empty = $("queue-empty");
   const active = items.filter((i) => i.status !== "done" && i.status !== "cancelled");
 
-  if (active.length === 0) {
-    list.innerHTML = "";
-    empty.style.display = "block";
-    return;
-  }
+  if (!active.length) { list.innerHTML = ""; empty.style.display = ""; return; }
   empty.style.display = "none";
 
-  // Newest first in display
-  list.innerHTML = active
-    .reverse()
-    .map((item) => {
-      const statusClass = `status-${item.status}`;
-      const showProgress = item.status === "downloading";
-      const showCancel = item.status === "downloading" || item.status === "pending";
-      const info = [];
+  list.innerHTML = [...active].reverse().map((item) => {
+    const title = item.title || item.filename || item.url;
+    const info = [];
+    if (item.status === "downloading") {
+      if (item.speed) info.push(item.speed);
+      if (item.eta) info.push(`eta ${item.eta}`);
+    }
+    if (item.status === "paused") info.push("paused");
+    if (item.status === "pending") info.push("queued");
+    if (item.status === "error") info.push(item.error || "error");
 
-      if (item.status === "downloading") {
-        if (item.speed) info.push(item.speed);
-        if (item.eta) info.push(`ETA: ${item.eta}`);
-      }
-      if (item.status === "pending") info.push("queued");
-      if (item.status === "error") info.push(item.error || "Error");
+    const isActive = item.status === "downloading" || item.status === "pending";
+    const buttons = isActive
+      ? `<button class="q-btn pause" data-id="${item.id}" title="Pause">&#9646;&#9646;</button>`
+      : `<button class="q-btn start" data-id="${item.id}" title="Start">&#9654;</button>`;
 
-      const title = item.title || item.filename || item.url;
-
-      return `
-        <div class="item ${statusClass}">
-          <div class="item-header">
-            <span class="item-title" ${item.page_url ? `data-url="${esc(item.page_url)}"` : ""} title="${esc(title)}">${esc(title)}</span>
-            ${showCancel ? `<button class="item-cancel" data-id="${item.id}" title="Cancel">&#10005;</button>` : ""}
-          </div>
-          ${showProgress ? `
-            <div class="progress-bar">
-              <div class="progress-fill" style="width:${item.progress || 0}%"></div>
-            </div>
-          ` : ""}
-          <div class="item-info">
-            <span>${Math.round(item.progress || 0)}%</span>
-            ${info.map((i) => `<span>${esc(i)}</span>`).join("")}
-          </div>
+    return `
+      <div class="q-item ${item.status}">
+        <div class="q-header">
+          <span class="q-title" ${item.page_url ? `data-url="${esc(item.page_url)}"` : ""} title="${esc(title)}">${esc(title)}</span>
+          <span class="q-buttons">
+            ${buttons}
+            <button class="q-btn cancel" data-id="${item.id}" title="Remove">&#10005;</button>
+          </span>
         </div>
-      `;
-    })
-    .join("");
+        ${item.status === "downloading" ? `<div class="progress"><div class="progress-fill" style="width:${item.progress || 0}%"></div></div>` : ""}
+        <div class="q-info">
+          <span>${Math.round(item.progress || 0)}%</span>
+          ${info.map((i) => `<span>${esc(i)}</span>`).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
 
-  // Clickable titles — open page_url
-  list.querySelectorAll(".item-title[data-url]").forEach((el) => {
-    el.addEventListener("click", () => {
-      chrome.tabs.create({ url: el.dataset.url });
-    });
-  });
-
-  // Cancel button
-  list.querySelectorAll(".item-cancel").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      await fetch(`${DAEMON}/queue/${btn.dataset.id}`, { method: "DELETE" });
-      loadQueue();
-    });
-  });
+  list.querySelectorAll(".q-title[data-url]").forEach((el) =>
+    el.addEventListener("click", () => chrome.tabs.create({ url: el.dataset.url })));
+  list.querySelectorAll(".q-btn.start").forEach((b) =>
+    b.addEventListener("click", async () => { await SnatchAPI.retry(b.dataset.id); loadQueue(); }));
+  list.querySelectorAll(".q-btn.pause").forEach((b) =>
+    b.addEventListener("click", async () => { await SnatchAPI.pause(b.dataset.id); loadQueue(); }));
+  list.querySelectorAll(".q-btn.cancel").forEach((b) =>
+    b.addEventListener("click", async () => { await SnatchAPI.cancel(b.dataset.id); loadQueue(); }));
 }
 
 // --- Completed ---
+$("open-folder-btn").addEventListener("click", () => SnatchAPI.revealFile(""));
+
+$("completed-search").addEventListener("input", (e) => {
+  const q = e.target.value.toLowerCase();
+  renderCompleted(q ? _allCompleted.filter((item) =>
+    `${item.title} ${item.filename} ${item.page_url}`.toLowerCase().includes(q)
+  ) : _allCompleted);
+});
+
 async function loadCompleted() {
-  try {
-    const res = await fetch(`${DAEMON}/completed`);
-    const data = await res.json();
-    renderCompleted(data.items || []);
-  } catch {
-    renderCompleted([]);
+  let offline = false;
+  try { _allCompleted = ((await SnatchAPI.completed()) || {}).items || []; }
+  catch { _allCompleted = []; offline = true; }
+  const empty = $("completed-empty");
+  if (offline) {
+    empty.textContent = "Daemon offline — start it to see downloads";
+    empty.style.display = "";
+    $("completed-list").innerHTML = "";
+    return;
   }
+  empty.textContent = "Empty";
+  const q = $("completed-search").value.toLowerCase();
+  renderCompleted(q ? _allCompleted.filter((item) =>
+    `${item.title} ${item.filename} ${item.page_url}`.toLowerCase().includes(q)
+  ) : _allCompleted);
 }
 
 function renderCompleted(items) {
-  const list = document.getElementById("completed-list");
-  const empty = document.getElementById("completed-empty");
-
-  if (items.length === 0) {
-    list.innerHTML = "";
-    empty.style.display = "block";
-    return;
-  }
+  const list = $("completed-list"), empty = $("completed-empty");
+  if (!items.length) { list.innerHTML = ""; empty.style.display = ""; return; }
   empty.style.display = "none";
 
-  list.innerHTML = items
-    .map((item) => {
-      const shortTitle = (item.title || item.filename || "untitled").slice(0, 35);
-      const displayTitle = (item.title || item.filename || "untitled").length > 35
-        ? shortTitle + "..." : shortTitle;
-      let domain = "";
-      try { domain = new URL(item.page_url).hostname; } catch {}
-      const skipped = item.last_skipped && (item.last_skipped > (item.completed_at || 0));
+  list.innerHTML = items.map((item) => {
+    const title = item.title || item.filename || "untitled";
+    const skipped = item.last_skipped && item.last_skipped > (item.completed_at || 0);
+    return `
+      <div class="c-item${skipped ? " skipped" : ""}" ${item.page_url ? `data-url="${esc(item.page_url)}"` : ""} title="${esc(title)}">
+        ${item.resolution ? `<span class="tag">${esc(item.resolution)}</span>` : ""}
+        <span class="c-title">${esc(title)}</span>
+      </div>
+    `;
+  }).join("");
 
-      return `
-        <div class="completed-item${skipped ? " completed-skipped" : ""}" title="${skipped ? "Skipped (already downloaded)" : ""}"">
-          <div class="completed-main">
-            ${item.resolution ? `<span class="detected-tag">${esc(item.resolution)}</span>` : ""}
-            <span class="completed-title" ${item.page_url ? `data-url="${esc(item.page_url)}"` : ""} title="${esc(item.title || "")}">${esc(displayTitle)}</span>
-          </div>
-          <div class="completed-meta">
-            ${domain ? `<span class="completed-url" data-url="${esc(item.page_url)}" title="${esc(item.page_url)}">${esc(domain)}</span>` : ""}
-            ${item.filename ? `<button class="completed-dest" data-filename="${esc(item.filename)}" title="Show in folder">&#128194;</button>` : ""}
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-
-  // Clickable titles — open page_url
-  list.querySelectorAll(".completed-title[data-url]").forEach((el) => {
-    el.addEventListener("click", () => {
-      chrome.tabs.create({ url: el.dataset.url });
-    });
-  });
-
-  // URL click — open in current window (works in incognito too)
-  list.querySelectorAll(".completed-url").forEach((el) => {
-    el.style.cursor = "pointer";
-    el.addEventListener("click", () => {
-      chrome.tabs.create({ url: el.dataset.url });
-    });
-  });
-
-  // Dest buttons — reveal file
-  list.querySelectorAll(".completed-dest").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      await fetch(`${DAEMON}/reveal_file`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: btn.dataset.filename }),
-      });
-    });
-  });
+  list.querySelectorAll(".c-item[data-url]").forEach((el) =>
+    el.addEventListener("click", () => chrome.tabs.create({ url: el.dataset.url })));
 }
 
 // --- Settings ---
-let currentSettings = {};
-
 async function loadSettings() {
   try {
-    const res = await fetch(`${DAEMON}/settings`);
-    currentSettings = await res.json();
-    document.getElementById("s-resolution").value = currentSettings.preferred_resolution || "best";
-    document.getElementById("s-download-dir").value = currentSettings.download_dir || "";
-    document.getElementById("s-max-concurrent").value = currentSettings.max_concurrent || 2;
-    document.getElementById("s-filter-res").checked = currentSettings.filter_resolution || false;
-    document.getElementById("s-skip-downloaded").checked = currentSettings.skip_downloaded !== false;
+    currentSettings = await SnatchAPI.getSettings();
+    $("s-resolution").value = currentSettings.preferred_resolution || "best";
+    $("s-download-dir").value = currentSettings.download_dir || "";
+    $("s-max-concurrent").value = currentSettings.max_concurrent || 2;
+    $("s-filter-res").checked = currentSettings.filter_resolution || false;
+    $("s-skip-downloaded").checked = currentSettings.skip_downloaded !== false;
   } catch {}
 }
 
-document.getElementById("s-save").addEventListener("click", async () => {
-  const dir = document.getElementById("s-download-dir").value.trim();
+$("s-save").addEventListener("click", async () => {
+  const dir = $("s-download-dir").value.trim();
   const settings = {
-    preferred_resolution: document.getElementById("s-resolution").value,
+    preferred_resolution: $("s-resolution").value,
     download_dir: dir,
-    max_concurrent: parseInt(document.getElementById("s-max-concurrent").value) || 2,
-    filter_resolution: document.getElementById("s-filter-res").checked,
-    skip_downloaded: document.getElementById("s-skip-downloaded").checked,
+    max_concurrent: parseInt($("s-max-concurrent").value) || 2,
+    filter_resolution: $("s-filter-res").checked,
+    skip_downloaded: $("s-skip-downloaded").checked,
   };
   try {
-    await fetch(`${DAEMON}/settings`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settings),
-    });
+    await SnatchAPI.putSettings(settings);
     currentSettings = settings;
     if (dir) addToDirHistory(dir);
-    document.getElementById("s-status").textContent = "Saved!";
-    setTimeout(() => (document.getElementById("s-status").textContent = ""), 2000);
+    $("s-status").textContent = "Saved!";
+    setTimeout(() => ($("s-status").textContent = ""), 2000);
   } catch {
-    document.getElementById("s-status").textContent = "Failed — daemon offline?";
+    $("s-status").textContent = "Failed — daemon offline?";
+    $("s-status").style.color = "var(--fail)";
+    setTimeout(() => { $("s-status").textContent = ""; $("s-status").style.color = ""; }, 3000);
   }
 });
 
 // --- Dir history ---
 async function getDirHistory() {
-  const data = await chrome.storage.local.get("dirHistory");
-  return data.dirHistory || [];
+  return (await chrome.storage.local.get("dirHistory")).dirHistory || [];
 }
 
 async function addToDirHistory(dir) {
-  let history = await getDirHistory();
-  history = [dir, ...history.filter((d) => d !== dir)].slice(0, 10);
-  await chrome.storage.local.set({ dirHistory: history });
-}
-
-async function removeDirHistory(dir) {
-  let history = await getDirHistory();
-  history = history.filter((d) => d !== dir);
-  await chrome.storage.local.set({ dirHistory: history });
+  const h = await getDirHistory();
+  await chrome.storage.local.set({ dirHistory: [dir, ...h.filter((d) => d !== dir)].slice(0, 10) });
 }
 
 async function renderDirHistory() {
-  const dropdown = document.getElementById("dir-history");
-  const history = await getDirHistory();
-  if (history.length === 0) {
-    dropdown.classList.add("hidden");
-    return;
-  }
-  dropdown.innerHTML = history
-    .map((d) => `
-      <div class="dir-history-item">
-        <span class="dir-history-path" title="${esc(d)}">${esc(d)}</span>
-        <button class="dir-history-remove" data-dir="${esc(d)}" title="Remove">&#10005;</button>
-      </div>
-    `)
-    .join("");
-  dropdown.classList.remove("hidden");
+  const dd = $("dir-history"), history = await getDirHistory();
+  if (!history.length) { dd.classList.add("hidden"); return; }
+  dd.innerHTML = history.map((d) => `
+    <div class="dir-history-item">
+      <span class="dir-history-path" title="${esc(d)}">${esc(d)}</span>
+      <button class="dir-history-remove" data-dir="${esc(d)}">&#10005;</button>
+    </div>
+  `).join("");
+  dd.classList.remove("hidden");
 
-  dropdown.querySelectorAll(".dir-history-path").forEach((el) => {
-    el.addEventListener("click", () => {
-      document.getElementById("s-download-dir").value = el.title;
-      dropdown.classList.add("hidden");
-    });
-  });
-
-  dropdown.querySelectorAll(".dir-history-remove").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
+  dd.querySelectorAll(".dir-history-path").forEach((el) =>
+    el.addEventListener("click", () => { $("s-download-dir").value = el.title; dd.classList.add("hidden"); }));
+  dd.querySelectorAll(".dir-history-remove").forEach((b) =>
+    b.addEventListener("click", async (e) => {
       e.stopPropagation();
-      await removeDirHistory(btn.dataset.dir);
+      const h = await getDirHistory();
+      await chrome.storage.local.set({ dirHistory: h.filter((d) => d !== b.dataset.dir) });
       renderDirHistory();
-    });
-  });
+    }));
 }
 
-function winToWsl(path) {
-  const m = path.trim().match(/^([A-Za-z]):[\\\/](.*)$/);
-  if (!m) return path;
-  const drive = m[1].toLowerCase();
-  const rest = m[2].replace(/\\/g, "/");
-  return `/mnt/${drive}/${rest}`;
-}
-
-const dirInput = document.getElementById("s-download-dir");
+const dirInput = $("s-download-dir");
 dirInput.addEventListener("focus", renderDirHistory);
 dirInput.addEventListener("click", renderDirHistory);
 dirInput.addEventListener("blur", () => {
-  const converted = winToWsl(dirInput.value);
-  if (converted !== dirInput.value) dirInput.value = converted;
 });
-
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".dir-wrapper")) {
-    document.getElementById("dir-history").classList.add("hidden");
-  }
+  if (!e.target.closest(".dir-wrapper")) $("dir-history").classList.add("hidden");
 });
 
 // --- Daemon health ---
 async function checkDaemon() {
-  const el = document.getElementById("daemon-status");
+  const dot = $("status-dot");
   try {
-    await fetch(`${DAEMON}/health`);
-    el.textContent = "Daemon online";
-    el.className = "daemon-online";
+    await SnatchAPI.health();
+    dot.className = "dot online";
+    dot.title = SnatchAPI.getMode() === "native" ? "Connected (native)" : "Daemon online";
   } catch {
-    el.textContent = "Daemon offline";
-    el.className = "daemon-offline";
+    dot.className = "dot offline";
+    dot.title = "Daemon offline";
   }
-}
-
-// --- Helpers ---
-function esc(s) {
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
 }
 
 init();

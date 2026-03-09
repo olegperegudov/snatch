@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yt_dlp
 
+import db
 from download_queue import DownloadQueue, DownloadItem, Status
 
 
@@ -45,21 +46,33 @@ def _build_format(resolution: str) -> str:
 
 
 def _sanitize_filename(name: str) -> str:
-    # Remove characters not allowed in filenames
     name = re.sub(r'[<>:"/\\|?*]', '', name)
     return name.strip().rstrip('.')[:200]
 
 
+def _extract_metadata(item: DownloadItem, download_dir: str):
+    """Save file metadata to DB after download."""
+    meta = {"download_dir": download_dir}
+    if item.filename:
+        filepath = Path(download_dir) / item.filename
+        if filepath.exists():
+            meta["filesize_bytes"] = filepath.stat().st_size
+        ext = filepath.suffix.lstrip(".")
+        if ext:
+            meta["format"] = ext
+    res_match = re.search(r"\[(\d+p)\]", item.title or "")
+    if res_match:
+        meta["resolution"] = res_match.group(1)
+    db.update_metadata(item.id, **meta)
+
+
 def _download_sync(item: DownloadItem, queue: DownloadQueue,
                    download_dir: str, resolution: str):
-    # Use item title as filename if available, otherwise let yt-dlp decide
     if item.title and item.title != item.url:
         filename = _sanitize_filename(item.title) + ".%(ext)s"
     else:
         filename = "%(title)s.%(ext)s"
 
-    # Download to temp dir first, move final file to download_dir
-    # This prevents temp/partial files from cluttering the download folder
     tmpdir = tempfile.mkdtemp(prefix="snatch_")
     try:
         opts = {
@@ -75,7 +88,6 @@ def _download_sync(item: DownloadItem, queue: DownloadQueue,
         with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.download([item.url])
 
-        # Move final file(s) to download_dir
         for f in Path(tmpdir).iterdir():
             dest = Path(download_dir) / f.name
             shutil.move(str(f), str(dest))
@@ -86,20 +98,20 @@ def _download_sync(item: DownloadItem, queue: DownloadQueue,
 
 async def download(item: DownloadItem, queue: DownloadQueue,
                    download_dir: str, resolution: str):
-    item.status = Status.DOWNLOADING
+    queue.mark_downloading(item)
     loop = asyncio.get_event_loop()
     try:
         await loop.run_in_executor(
             None,
             functools.partial(_download_sync, item, queue, download_dir, resolution),
         )
-        if item.status != Status.CANCELLED:
-            item.status = Status.DONE
-            item.progress = 100.0
+        if item.status not in (Status.CANCELLED, Status.PAUSED):
+            queue.mark_done(item)
+            _extract_metadata(item, download_dir)
     except yt_dlp.utils.DownloadCancelled:
-        item.status = Status.CANCELLED
+        # Don't override PAUSED — pause sets CANCELLED to stop yt-dlp, then PAUSED
+        if item.status != Status.PAUSED:
+            queue.mark_cancelled(item)
     except Exception as e:
-        item.status = Status.ERROR
-        item.error = str(e)[:200]
-    finally:
-        queue._save_state()
+        if item.status != Status.PAUSED:
+            queue.mark_error(item, str(e)[:200])

@@ -1,10 +1,10 @@
 import asyncio
-import json
 import time
 import uuid
-from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from enum import Enum
+
+import db
 
 
 class Status(str, Enum):
@@ -13,12 +13,13 @@ class Status(str, Enum):
     DONE = "done"
     ERROR = "error"
     CANCELLED = "cancelled"
+    PAUSED = "paused"
 
 
 @dataclass
 class DownloadItem:
     id: str
-    url: str
+    url: str              # video_url (the actual stream)
     page_url: str = ""
     title: str = ""
     filename: str = ""
@@ -41,8 +42,7 @@ class DownloadQueue:
         self.items: dict[str, DownloadItem] = {}
         self.max_concurrent = max_concurrent
         self._semaphore = asyncio.Semaphore(max_concurrent)
-        self._state_file = Path(__file__).parent / "queue_state.json"
-        self._load_state()
+        self._load_interrupted()
 
     def add(self, url: str, page_url: str = "", title: str = "") -> DownloadItem:
         item = DownloadItem(
@@ -52,7 +52,7 @@ class DownloadQueue:
             title=title or url.split("/")[-1][:60],
         )
         self.items[item.id] = item
-        self._save_state()
+        db.add(item.id, video_url=url, page_url=page_url, title=title)
         return item
 
     def remove(self, item_id: str) -> bool:
@@ -60,9 +60,10 @@ class DownloadQueue:
             item = self.items[item_id]
             if item.status == Status.DOWNLOADING:
                 item.status = Status.CANCELLED
+                db.update_status(item_id, "cancelled")
             else:
                 del self.items[item_id]
-            self._save_state()
+                db.update_status(item_id, "cancelled")
             return True
         return False
 
@@ -73,20 +74,41 @@ class DownloadQueue:
         self.max_concurrent = n
         self._semaphore = asyncio.Semaphore(n)
 
-    def _save_state(self):
-        data = {k: v.to_dict() for k, v in self.items.items()
-                if v.status in (Status.PENDING, Status.DOWNLOADING)}
-        self._state_file.write_text(json.dumps(data, indent=2))
+    def mark_done(self, item: DownloadItem):
+        """Mark item as done in memory and DB."""
+        item.status = Status.DONE
+        item.progress = 100.0
+        extra = {}
+        if item.filename:
+            extra["filename"] = item.filename
+        db.update_status(item.id, "done", **extra)
 
-    def _load_state(self):
-        if self._state_file.exists():
-            try:
-                data = json.loads(self._state_file.read_text())
-                for k, v in data.items():
-                    v["status"] = Status.PENDING  # restart pending on load
-                    self.items[k] = DownloadItem(**{
-                        key: val for key, val in v.items()
-                        if key in DownloadItem.__dataclass_fields__
-                    })
-            except (json.JSONDecodeError, TypeError):
-                pass
+    def mark_error(self, item: DownloadItem, error: str):
+        """Mark item as error in memory and DB."""
+        item.status = Status.ERROR
+        item.error = error
+        db.update_status(item.id, "error", error=error)
+
+    def mark_cancelled(self, item: DownloadItem):
+        item.status = Status.CANCELLED
+        db.update_status(item.id, "cancelled")
+
+    def mark_downloading(self, item: DownloadItem):
+        item.status = Status.DOWNLOADING
+        db.update_status(item.id, "downloading")
+
+    def _load_interrupted(self):
+        """On startup: recover interrupted downloads from DB."""
+        db.recover_interrupted()  # downloading → paused
+        for row in db.get_by_status("pending", "paused"):
+            if row["id"] not in self.items and row.get("video_url"):
+                item = DownloadItem(
+                    id=row["id"],
+                    url=row["video_url"],
+                    page_url=row.get("page_url", ""),
+                    title=row.get("title", ""),
+                    filename=row.get("filename", ""),
+                    status=Status.PAUSED,
+                    created_at=row.get("created_at", time.time()),
+                )
+                self.items[item.id] = item

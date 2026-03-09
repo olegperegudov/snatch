@@ -1,10 +1,8 @@
 import asyncio
-import hashlib
 import json
 import re
 import subprocess
 import sys
-import time
 from pathlib import Path
 from urllib.parse import urljoin
 
@@ -13,20 +11,31 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from download_queue import DownloadQueue
+import db
+from download_queue import DownloadQueue, Status
 from downloader import download
+
+# --- Init DB ---
+db.init()
+
+# Migrate history.json on first run (idempotent)
+history_json = Path(__file__).parent / "history.json"
+if history_json.exists():
+    count = db.migrate_from_json(str(history_json))
+    if count > 0:
+        history_json.rename(history_json.with_suffix(".json.bak"))
+        print(f"Migrated {count} records from history.json -> snatch.db")
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # chrome-extension:// origins
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 SETTINGS_FILE = Path(__file__).parent / "settings.json"
-HISTORY_FILE = Path(__file__).parent / "history.json"
 DEFAULT_SETTINGS = {
     "download_dir": "/mnt/c/Users/olegp/Downloads/_old",
     "max_concurrent": 2,
@@ -44,68 +53,20 @@ def load_settings() -> dict:
     return dict(DEFAULT_SETTINGS)
 
 
-def save_settings(settings: dict):
-    SETTINGS_FILE.write_text(json.dumps(settings, indent=2))
+def save_settings(s: dict):
+    SETTINGS_FILE.write_text(json.dumps(s, indent=2))
 
 
 settings = load_settings()
 queue = DownloadQueue(max_concurrent=settings["max_concurrent"])
 
 
-# --- History (completed downloads) ---
-def _url_hash(url: str) -> str:
-    return hashlib.sha256(url.encode()).hexdigest()[:12]
-
-
-def load_history() -> list[dict]:
-    if HISTORY_FILE.exists():
-        try:
-            return json.loads(HISTORY_FILE.read_text())
-        except (json.JSONDecodeError, TypeError):
-            pass
-    return []
-
-
-def save_history(history: list[dict]):
-    HISTORY_FILE.write_text(json.dumps(history, indent=2))
-
-
-def is_in_history(page_url: str) -> bool:
-    h = _url_hash(page_url)
-    return any(item["hash"] == h for item in load_history())
-
-
-def add_to_history(item):
-    history = load_history()
-    entry = {
-        "hash": _url_hash(item.page_url),
-        "page_url": item.page_url,
-        "title": item.title,
-        "filename": item.filename,
-        "resolution": "",
-        "completed_at": time.time(),
-    }
-    # Extract resolution from title like "Video Name [720p]"
-    res_match = re.search(r"\[(\d+p)\]", item.title or "")
-    if res_match:
-        entry["resolution"] = res_match.group(1)
-    history.append(entry)
-    save_history(history)
-
-
-def _mark_skipped(page_url: str, title: str = ""):
-    """Update the last_skipped timestamp on the existing history entry."""
-    history = load_history()
-    h = _url_hash(page_url)
-    for entry in history:
-        if entry["hash"] == h:
-            entry["last_skipped"] = time.time()
-            break
-    save_history(history)
-
-
-class UrlRequest(BaseModel):
-    url: str
+# --- Startup: log recovered downloads ---
+@app.on_event("startup")
+async def startup():
+    paused = [item for item in queue.items.values() if item.status.value == "paused"]
+    if paused:
+        print(f"Recovered {len(paused)} interrupted downloads (paused)")
 
 
 class DownloadRequest(BaseModel):
@@ -113,18 +74,81 @@ class DownloadRequest(BaseModel):
     page_url: str = ""
     title: str = ""
     force: bool = False
+    auto_start: bool = True
 
 
 @app.post("/download")
 async def add_download(req: DownloadRequest):
-    # Check history if skip_downloaded is enabled (unless force)
-    if not req.force and settings.get("skip_downloaded") and req.page_url and is_in_history(req.page_url):
-        # Mark as skipped in history for UI
-        _mark_skipped(req.page_url, req.title)
+    if not req.force and settings.get("skip_downloaded") and req.page_url and db.is_downloaded(req.page_url):
+        db.mark_skipped(req.page_url)
         return {"ok": False, "reason": "already_downloaded"}
     item = queue.add(req.url, req.page_url, req.title)
-    asyncio.create_task(_run_download(item.id))
+    if req.auto_start:
+        asyncio.create_task(_run_download(item.id))
+    else:
+        item.status = Status.PAUSED
+        db.update_status(item.id, "paused")
     return {"ok": True, "id": item.id}
+
+
+@app.post("/retry")
+async def retry_download(req: dict):
+    """Retry a paused/error download."""
+    item_id = req.get("id", "")
+    if item_id in queue.items:
+        item = queue.items[item_id]
+        if item.status.value in ("paused", "error"):
+            item.status = Status.PENDING
+            item.progress = 0.0
+            item.error = ""
+            db.update_status(item_id, "pending")
+            asyncio.create_task(_run_download(item_id))
+            return {"ok": True}
+    return {"ok": False, "error": "item not found or not retryable"}
+
+
+@app.post("/pause")
+async def pause_download(req: dict):
+    """Pause a pending/downloading item."""
+    item_id = req.get("id", "")
+    if item_id in queue.items:
+        item = queue.items[item_id]
+        if item.status.value in ("downloading", "pending"):
+            if item.status.value == "downloading":
+                item.status = Status.CANCELLED  # triggers DownloadCancelled in yt-dlp hook
+            # Set paused — downloader.py checks this and won't override
+            item.status = Status.PAUSED
+            item.speed = ""
+            item.eta = ""
+            db.update_status(item_id, "paused")
+            return {"ok": True}
+    return {"ok": False, "error": "item not found or not pausable"}
+
+
+@app.post("/start_queue")
+async def start_queue():
+    """Start all paused items (FIFO, respecting max_concurrent via semaphore)."""
+    paused = [i for i in queue.items.values() if i.status == Status.PAUSED]
+    paused.sort(key=lambda i: i.created_at)
+    for item in paused:
+        item.status = Status.PENDING
+        item.progress = 0.0
+        item.error = ""
+        db.update_status(item.id, "pending")
+        asyncio.create_task(_run_download(item.id))
+    return {"ok": True, "started": len(paused)}
+
+
+@app.post("/stop_queue")
+async def stop_queue():
+    """Pause all pending items (downloading items continue)."""
+    count = 0
+    for item in queue.items.values():
+        if item.status == Status.PENDING:
+            item.status = Status.PAUSED
+            db.update_status(item.id, "paused")
+            count += 1
+    return {"ok": True, "paused": count}
 
 
 async def _run_download(item_id: str):
@@ -132,9 +156,10 @@ async def _run_download(item_id: str):
         item = queue.items.get(item_id)
         if not item:
             return
+        # Skip if paused/cancelled while waiting for semaphore
+        if item.status.value not in ("pending",):
+            return
         await download(item, queue, settings["download_dir"], settings["preferred_resolution"])
-        if item.status.value == "done":
-            add_to_history(item)
 
 
 @app.get("/queue")
@@ -164,15 +189,13 @@ async def update_settings(new_settings: dict):
 
 @app.get("/completed")
 async def get_completed():
-    history = load_history()
-    # Return last 50, newest first
-    return {"items": list(reversed(history[-50:]))}
+    return {"items": db.get_completed(limit=50)}
 
 
 @app.post("/history/check")
-async def check_history(req: UrlRequest):
-    """Check if a page URL was already downloaded."""
-    return {"downloaded": is_in_history(req.url)}
+async def check_history(req: dict):
+    url = req.get("url", "")
+    return {"downloaded": db.is_downloaded(url)}
 
 
 @app.post("/reveal/{item_id}")
@@ -189,21 +212,11 @@ async def reveal_file(item_id: str):
 
 @app.post("/reveal_file")
 async def reveal_by_filename(req: dict):
-    """Reveal a completed file by filename. Falls back to opening the folder."""
-    filename = req.get("filename", "")
-    dl_dir = Path(settings["download_dir"])
-    if filename:
-        filepath = dl_dir / filename
-        if filepath.exists():
-            _reveal_in_explorer(filepath)
-            return {"ok": True}
-    # File missing or no filename — just open the download folder
-    _open_folder(dl_dir)
-    return {"ok": True, "fallback": "folder"}
+    _open_folder(Path(settings["download_dir"]))
+    return {"ok": True}
 
 
 def _open_folder(folder: Path):
-    """Open a folder in the file manager."""
     if sys.platform == "win32":
         subprocess.Popen(["explorer", str(folder)])
     else:
@@ -214,25 +227,12 @@ def _open_folder(folder: Path):
             subprocess.Popen(["xdg-open", str(folder)])
 
 
-def _reveal_in_explorer(filepath: Path):
-    if sys.platform == "win32":
-        subprocess.Popen(["explorer", "/select,", str(filepath)])
-    else:
-        try:
-            win_path = subprocess.check_output(["wslpath", "-w", str(filepath)], text=True).strip()
-            # explorer.exe needs the whole /select,"path" as one argument
-            subprocess.Popen(f'explorer.exe /select,"{win_path}"', shell=True)
-        except FileNotFoundError:
-            subprocess.Popen(["xdg-open", str(filepath.parent)])
-
-
 class ProbeRequest(BaseModel):
     url: str
 
 
 @app.post("/probe")
 async def probe_url(req: ProbeRequest):
-    """Fetch m3u8/mpd and extract available resolutions."""
     url = req.url
     text = ""
     try:
@@ -245,7 +245,6 @@ async def probe_url(req: ProbeRequest):
 
     variants = []
 
-    # Try parsing HLS master playlist from fetched content
     if text and ".m3u8" in url:
         height = 0
         bandwidth = 0
@@ -268,23 +267,19 @@ async def probe_url(req: ProbeRequest):
                 height = 0
                 bandwidth = 0
 
-    # Fallback: parse resolutions from URL itself (e.g. multi=WxH:label,... pattern)
     if not variants:
         variants = _parse_url_resolutions(url)
 
     if not variants:
         variants.append({"url": url, "resolution": "unknown", "height": 0, "type": "HLS"})
 
-    # Sort by height descending
     variants.sort(key=lambda v: v["height"], reverse=True)
     return {"variants": variants}
 
 
 def _parse_url_resolutions(url: str) -> list[dict]:
-    """Extract resolution variants from URL patterns (CDN-encoded resolutions)."""
     variants = []
 
-    # Pattern: multi=WxH:label,WxH:label,... (xHamster CDN style)
     multi_match = re.search(r"multi=([^/]+)", url)
     if multi_match:
         for part in multi_match.group(1).split(","):
@@ -300,7 +295,6 @@ def _parse_url_resolutions(url: str) -> list[dict]:
                 })
         return variants
 
-    # Generic: look for resolution patterns in URL
     for m in re.finditer(r"(\d{3,4})p", url):
         height = int(m.group(1))
         if 144 <= height <= 4320:
@@ -323,4 +317,4 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=9111)
+    uvicorn.run(app, host="127.0.0.1", port=9111, access_log=False)
