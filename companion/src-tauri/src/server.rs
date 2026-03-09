@@ -8,10 +8,11 @@ use tower_http::cors::CorsLayer;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::db::Db;
 use crate::downloader;
-use crate::queue::{DownloadItem, DownloadQueue, Status};
+use crate::queue::{DownloadQueue, Status};
 
 pub struct AppState {
     pub queue: DownloadQueue,
@@ -130,8 +131,9 @@ async fn get_completed(State(state): State<Arc<AppState>>) -> Json<Value> {
 }
 
 async fn get_settings(State(state): State<Arc<AppState>>) -> Json<Settings> {
-    let settings = state.settings.lock().await;
-    Json(settings.clone())
+    let guard = state.settings.lock().await;
+    let s: Settings = guard.clone();
+    Json(s)
 }
 
 async fn put_settings(
