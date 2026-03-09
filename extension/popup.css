@@ -56,7 +56,7 @@ body {
 header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 8px 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -106,7 +106,6 @@ header {
   user-select: none;
 }
 .toggle input { display: none; }
-.toggle-label { font-size: 10px; color: var(--text-muted); transition: color 0.2s; }
 .toggle-track {
   width: 24px;
   height: 12px;
@@ -129,7 +128,6 @@ header {
   transform: translateX(12px);
   background: var(--ok);
 }
-.toggle:has(input:checked) .toggle-label { color: var(--ok); }
 
 /* --- Settings button --- */
 #settings-btn {
@@ -148,7 +146,6 @@ header {
   width: 7px; height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-right: 4px;
 }
 .dot.online {
   background: var(--ok);
@@ -415,16 +412,13 @@ header {
   font-size: 11px;
 }
 
-.check-row {
-  display: flex !important;
+.setting-row {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-.check-row input[type="checkbox"] {
-  width: 13px; height: 13px;
-  margin: 0;
-  accent-color: var(--ok);
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: var(--text-dim);
+  font-size: 11px;
 }
 
 .settings-body select,

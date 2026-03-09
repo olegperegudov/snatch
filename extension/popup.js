@@ -259,7 +259,7 @@ function renderCompleted(items) {
 async function loadSettings() {
   try {
     currentSettings = await SnatchAPI.getSettings();
-    $("s-resolution").value = currentSettings.preferred_resolution || "best";
+    $("s-resolution").value = currentSettings.preferred_resolution || "720p";
     $("s-download-dir").value = currentSettings.download_dir || "";
     $("s-max-concurrent").value = currentSettings.max_concurrent || 2;
     $("s-filter-res").checked = currentSettings.filter_resolution || false;

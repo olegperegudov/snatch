@@ -17,10 +17,11 @@ SnatchAPI.onQueueUpdate((data) => {
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     const url = details.url.toLowerCase();
+    // Skip non-video resources (extension manifests, API calls, etc.)
+    if (url.startsWith("chrome-extension://") || url.startsWith("moz-extension://")) return;
     if (
       url.includes(".m3u8") ||
       url.includes(".mpd") ||
-      url.includes("/manifest") ||
       url.includes("video/mp4") ||
       (url.includes(".mp4") && details.type === "media")
     ) {
