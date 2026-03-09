@@ -188,9 +188,10 @@ async fn add_download(
         let db = state.db.clone();
         let sem = state.queue.semaphore.clone();
         let item_id = id.clone();
+        let force = req.force;
         tokio::spawn(async move {
             let _permit = sem.acquire().await.unwrap();
-            downloader::download(item_id, queue_items, db, download_dir, preferred_res).await;
+            downloader::download(item_id, queue_items, db, download_dir, preferred_res, force).await;
         });
     } else {
         // Mark as paused
@@ -234,7 +235,7 @@ async fn retry_download(
             drop(lock);
             tokio::spawn(async move {
                 let _permit = sem.acquire().await.unwrap();
-                downloader::download(item_id, queue_items, db, download_dir, preferred_res).await;
+                downloader::download(item_id, queue_items, db, download_dir, preferred_res, false).await;
             });
             return Json(json!({"ok": true}));
         }
@@ -302,7 +303,7 @@ async fn start_queue(State(state): State<Arc<AppState>>) -> Json<Value> {
         let pref = preferred_res.clone();
         tokio::spawn(async move {
             let _permit = sem.acquire().await.unwrap();
-            downloader::download(id, queue_items, db, dl_dir, pref).await;
+            downloader::download(id, queue_items, db, dl_dir, pref, false).await;
         });
     }
 

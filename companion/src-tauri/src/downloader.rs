@@ -32,6 +32,7 @@ pub async fn download(
     db: Arc<Db>,
     download_dir: String,
     preferred_resolution: String,
+    force_overwrite: bool,
 ) {
     let url = {
         let mut lock = items.lock().await;
@@ -70,8 +71,11 @@ pub async fn download(
         "-f", &format,
         "--merge-output-format", "mp4",
         "-o", output_template.to_str().unwrap_or("%(title)s.%(ext)s"),
-        &url,
     ]);
+    if force_overwrite {
+        cmd.arg("--force-overwrite");
+    }
+    cmd.arg(&url);
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
 
