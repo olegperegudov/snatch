@@ -29,9 +29,9 @@ jobs:
         run: npm install
 
       - name: Download yt-dlp
-        working-directory: companion/src-tauri/binaries
         run: |
-          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "yt-dlp-x86_64-pc-windows-msvc.exe"
+          New-Item -ItemType Directory -Force -Path companion\src-tauri\binaries
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "companion\src-tauri\binaries\yt-dlp-x86_64-pc-windows-msvc.exe"
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
