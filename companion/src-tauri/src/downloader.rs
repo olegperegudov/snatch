@@ -164,6 +164,18 @@ pub async fn download(
         }
     }
 
+    // Capture stderr for error reporting
+    let stderr_text = if let Some(stderr) = child.stderr.take() {
+        let mut lines = Vec::new();
+        let mut reader = BufReader::new(stderr).lines();
+        while let Ok(Some(line)) = reader.next_line().await {
+            lines.push(line);
+        }
+        lines.join("\n")
+    } else {
+        String::new()
+    };
+
     let status = child.wait().await;
     let mut lock = items.lock().await;
     if let Some(item) = lock.get_mut(&item_id) {
@@ -181,7 +193,11 @@ pub async fn download(
             }
             _ => {
                 item.status = Status::Error;
-                item.error = "yt-dlp exited with error".to_string();
+                // Use last non-empty stderr line as error, fall back to generic message
+                let last_line = stderr_text.lines().rev()
+                    .find(|l| !l.trim().is_empty())
+                    .unwrap_or("yt-dlp exited with error");
+                item.error = last_line.to_string();
                 db.update_status_with_error(&item_id, "error", &item.error);
             }
         }
