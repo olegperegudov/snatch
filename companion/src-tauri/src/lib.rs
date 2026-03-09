@@ -5,6 +5,7 @@ mod server;
 
 use server::{AppState, Settings, db_path, settings_path, start_server};
 use std::sync::Arc;
+use tauri::image::Image as TauriImage;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 
@@ -59,6 +60,7 @@ pub fn run() {
             let menu = Menu::with_items(app, &[&stop_i])?;
 
             let _tray = TrayIconBuilder::new()
+                .icon(TauriImage::from_bytes(include_bytes!("../icons/icon.png")).unwrap())
                 .menu(&menu)
                 .tooltip("Snatch — running on :9111")
                 .on_menu_event(|app, event| {

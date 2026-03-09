@@ -8,12 +8,7 @@
   },
   "app": {
     "withGlobalTauri": false,
-    "windows": [],
-    "trayIcon": {
-      "id": "main",
-      "iconPath": "icons/icon.png",
-      "tooltip": "Snatch — running"
-    }
+    "windows": []
   },
   "bundle": {
     "active": true,
