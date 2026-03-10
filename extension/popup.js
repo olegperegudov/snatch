@@ -392,6 +392,13 @@ async function checkDaemon() {
       showBanner(`Companion outdated (${res.version})`, { update: "Update" });
     } else {
       hideBanner();
+      // Check for newer version on GitHub (non-blocking)
+      try {
+        const upd = await SnatchAPI.checkUpdate();
+        if (upd && upd.update_available) {
+          showBanner(`Update available: v${upd.latest}`, { update: "Update" });
+        }
+      } catch { /* silent — update check is optional */ }
     }
   } catch {
     dot.className = "dot offline";

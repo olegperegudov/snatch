@@ -4,7 +4,8 @@ use axum::{
     routing::{delete, get, post, put},
     Json,
 };
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
+use http::HeaderValue;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
@@ -97,7 +98,14 @@ pub async fn start_server(state: Arc<AppState>) {
         .route("/history/check", post(check_history))
         .route("/check-update", get(check_update))
         .route("/update", post(do_update))
-        .layer(CorsLayer::very_permissive())
+        .layer(
+            CorsLayer::new()
+                .allow_origin(AllowOrigin::predicate(|origin: &HeaderValue, _| {
+                    origin.as_bytes().starts_with(b"chrome-extension://")
+                }))
+                .allow_methods(tower_http::cors::Any)
+                .allow_headers(tower_http::cors::Any)
+        )
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:9111").await

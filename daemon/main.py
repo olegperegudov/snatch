@@ -30,14 +30,14 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=r"^chrome-extension://.*$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 SETTINGS_FILE = Path(__file__).parent / "settings.json"
 DEFAULT_SETTINGS = {
-    "download_dir": "/mnt/c/Users/olegp/Downloads/_old",
+    "download_dir": str(Path.home() / "Downloads"),
     "max_concurrent": 2,
     "preferred_resolution": "best",
     "skip_downloaded": True,
