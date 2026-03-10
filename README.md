@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frog_master.png" width="96" alt="Snatch logo" />
+  <img src="raccoon_master.png" width="96" alt="Snatch logo" />
 </p>
 
 <h1 align="center">Snatch</h1>
