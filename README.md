@@ -1,8 +1,27 @@
-# Snatch — Video Stream Downloader
+<p align="center">
+  <img src="frog_master.png" width="96" alt="Snatch logo" />
+</p>
 
-Chrome extension + local Python daemon for downloading HLS/DASH video streams. One click to queue, downloads silently in the background.
+<h1 align="center">Snatch</h1>
+
+<p align="center">
+  Video stream downloader for Chrome.<br/>
+  Detects HLS/DASH streams on any page — one click to download as mp4.
+</p>
+
+<p align="center">
+  <b>Local only</b> — everything runs on your machine, nothing leaves localhost<br/>
+  <b>Open source</b> — Chrome extension + Python daemon, fully transparent
+</p>
 
 ## How it works
+
+1. Browse any page with video (HLS/DASH streams)
+2. The extension badge lights up with detected streams
+3. Click the extension icon → pick resolution → **Download**
+4. The file appears in your Downloads folder
+
+Under the hood: the extension intercepts `.m3u8` / `.mpd` / `.mp4` requests and sends them to a local Python daemon that uses `yt-dlp` + `ffmpeg` to download and merge streams.
 
 ```
 Chrome Extension (MV3)              Python Daemon (localhost:9111)
@@ -19,17 +38,15 @@ Chrome Extension (MV3)              Python Daemon (localhost:9111)
                                     └───────────────────────────┘
 ```
 
-The extension intercepts `.m3u8` / `.mpd` / `.mp4` requests via `webRequest` and `XHR/fetch` hooks. When you click Download, it sends the URL to the local daemon which uses `yt-dlp` to download and merge the stream into an mp4 file.
+## Quick start
 
-## Prerequisites
+### Prerequisites
 
 - **Python 3.10+**
 - **ffmpeg** in PATH (`sudo apt install ffmpeg` or [download](https://ffmpeg.org/download.html))
 - **Chrome/Chromium** browser
 
-## Setup
-
-### 1. Daemon
+### 1. Set up the daemon
 
 ```bash
 cd snatch/daemon
@@ -38,80 +55,63 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Extension
+### 2. Load the extension
 
 1. Open `chrome://extensions/`
-2. Enable "Developer mode" (top right)
-3. Click "Load unpacked" → select `snatch/extension/` folder
-4. (Optional) Enable in Incognito: extension details → "Allow in Incognito"
+2. Enable **Developer mode** (top right)
+3. Click **Load unpacked** → select `snatch/extension/` folder
+4. *(Optional)* Enable in Incognito: extension details → "Allow in Incognito"
 
-## Running
+### 3. Run
 
 ```bash
-# Start the daemon
 cd snatch/daemon
 .venv/bin/python main.py
 ```
 
-Or add an alias to your shell:
+The daemon runs on `http://127.0.0.1:9111`. You can also add a shell alias:
+
 ```bash
 alias snatch="~/snatch/daemon/.venv/bin/python ~/snatch/daemon/main.py"
 ```
 
-The daemon runs on `http://127.0.0.1:9111`.
-
-## Usage
-
-1. Open any page with video (HLS/DASH streams)
-2. The extension badge shows detected streams
-3. **Click the extension icon** → see detected resolutions → click Download
-4. **Right-click** → Snatch → pick a resolution from the context menu
-5. Downloads queue is visible in the popup (Downloads tab)
-6. Completed downloads are in the Completed tab with links to source and file location
-
 ## Features
 
-- Auto-detection of HLS (.m3u8) and DASH (.mpd) streams
-- Resolution selection (best / 1080p / 720p / 480p)
-- Probe endpoint parses m3u8 master playlists for real resolutions
-- URL-based resolution extraction (for CDNs that encode resolution in URL)
-- Concurrent downloads with configurable parallelism
-- Download history with deduplication (skip already downloaded)
-- Temp dir for downloads — no partial files cluttering your folder
-- "Show in folder" button opens Explorer with the file selected (WSL2 compatible)
-- Badge shows queue status: `pending|downloading`
-- Works in Incognito mode
+- **Auto-detection** — catches HLS (.m3u8) and DASH (.mpd) streams automatically
+- **Resolution picker** — choose best / 1080p / 720p / 480p, or let it pick the best
+- **Right-click menu** — right-click → Snatch → pick resolution from context menu
+- **Download queue** — concurrent downloads with configurable parallelism
+- **History & dedup** — tracks completed downloads, skips duplicates
+- **Clean downloads** — temp dir for partial files, only finished mp4s in your folder
+- **Show in folder** — opens Explorer with the file selected (WSL2 compatible)
+- **Works in Incognito** — enable in extension settings
 
 ## Settings
 
-Accessible via the gear icon in the popup:
+Click the gear icon in the popup:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Resolution | best | Preferred download resolution |
-| Only show selected resolution | off | Filter detected list |
-| Skip already downloaded | on | Check history before downloading |
-| Download folder | ~/Downloads | Where files are saved |
-| Max parallel downloads | 2 | Concurrent download limit |
+| **Resolution** | best | Preferred download resolution |
+| **Only show selected** | off | Filter detected list to chosen resolution |
+| **Skip downloaded** | on | Check history before downloading |
+| **Download folder** | ~/Downloads | Where files are saved |
+| **Max parallel** | 2 | Concurrent download limit |
 
-## Project structure
+## Privacy
 
-```
-snatch/
-├── daemon/
-│   ├── main.py              # FastAPI server, endpoints, history
-│   ├── downloader.py         # yt-dlp wrapper, progress hooks
-│   ├── download_queue.py     # Queue with semaphore, state persistence
-│   ├── requirements.txt
-│   ├── settings.json         # User settings (auto-created)
-│   └── history.json          # Download history (auto-created)
-├── extension/
-│   ├── manifest.json         # Chrome MV3 manifest
-│   ├── background.js         # Service worker: webRequest, context menu, badge
-│   ├── content.js            # XHR/fetch hook for stream detection
-│   ├── popup.html            # Popup UI
-│   ├── popup.js              # Popup logic: tabs, queue, completed
-│   ├── popup.css             # Dark theme styles
-│   └── icons/                # Extension icons (16, 48, 128px)
-└── README.md
-```
+- The daemon runs on `localhost:9111` — no external connections except to the video source
+- No analytics, no tracking, no telemetry
+- Download history stored locally in `daemon/history.json`
+- Fully open source — inspect every line of code
+
+## Tech stack
+
+- [Chrome Extensions MV3](https://developer.chrome.com/docs/extensions/mv3/) — webRequest, service worker
+- [FastAPI](https://fastapi.tiangolo.com/) — local HTTP daemon
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — stream downloading
+- [ffmpeg](https://ffmpeg.org/) — stream merging
+
+## License
+
+MIT
