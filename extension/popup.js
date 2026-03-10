@@ -1,4 +1,5 @@
-const RELEASES_URL = "https://github.com/olegperegudov/snatch/releases/latest";
+const GITHUB_REPO = "olegperegudov/snatch";
+const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
 const MIN_COMPANION = "0.1.0";
 
 let currentTab = null;
@@ -348,10 +349,9 @@ document.addEventListener("click", (e) => {
 });
 
 // --- Daemon health + companion banner ---
-function showBanner(text, { link, update } = {}) {
+function showBanner(text, { link } = {}) {
   const banner = $("companion-banner");
   const linkEl = $("banner-link");
-  const updateEl = $("banner-update");
   $("banner-text").textContent = text;
   if (link) {
     linkEl.textContent = link;
@@ -359,12 +359,6 @@ function showBanner(text, { link, update } = {}) {
     linkEl.classList.remove("hidden");
   } else {
     linkEl.classList.add("hidden");
-  }
-  if (update) {
-    updateEl.textContent = update;
-    updateEl.classList.remove("hidden");
-  } else {
-    updateEl.classList.add("hidden");
   }
   banner.classList.remove("hidden");
 }
@@ -388,55 +382,87 @@ async function checkDaemon() {
     const res = await SnatchAPI.health();
     dot.className = "dot online";
     dot.title = SnatchAPI.getMode() === "native" ? "Connected (native)" : "Daemon online";
-    if (res && res.version && versionCompare(res.version, MIN_COMPANION) < 0) {
-      showBanner(`Companion outdated (${res.version})`, { update: "Update" });
+    // Show version in settings
+    const ver = res?.version || "?";
+    const versionLink = $("version-link");
+    versionLink.textContent = `v${ver}`;
+    versionLink.href = `https://github.com/${GITHUB_REPO}/releases/tag/v${ver}`;
+    if (versionCompare(ver, MIN_COMPANION) < 0) {
+      showBanner(`Companion outdated (${ver})`, { link: "Get Companion" });
     } else {
       hideBanner();
-      // Check for newer version on GitHub (non-blocking)
-      try {
-        const upd = await SnatchAPI.checkUpdate();
-        if (upd && upd.update_available) {
-          showBanner(`Update available: v${upd.latest}`, { update: "Update" });
-        }
-      } catch { /* silent — update check is optional */ }
+      // Auto-check for updates (non-blocking)
+      silentUpdateCheck();
     }
   } catch {
     dot.className = "dot offline";
     dot.title = "Daemon offline";
+    $("version-link").textContent = "offline";
+    $("version-link").removeAttribute("href");
     showBanner("Companion app not running", { link: "Get Companion" });
   }
 }
 
-// --- Update button ---
-$("banner-update").addEventListener("click", async () => {
-  const btn = $("banner-update");
-  btn.textContent = "Updating...";
-  btn.disabled = true;
+// --- Silent update check (auto on startup) ---
+async function silentUpdateCheck() {
   try {
-    const res = await SnatchAPI.update();
-    if (res && res.ok) {
-      $("banner-text").textContent = `Installing v${res.version}...`;
-      btn.classList.add("hidden");
-      // Companion exits — poll until it comes back
-      setTimeout(async function poll() {
-        try {
-          await SnatchAPI.health();
-          hideBanner();
-          checkDaemon();
-        } catch {
-          setTimeout(poll, 2000);
-        }
-      }, 3000);
+    const upd = await SnatchAPI.checkUpdate();
+    if (upd?.update_available) {
+      $("check-update-btn").textContent = `update to v${upd.latest}`;
+      $("check-update-btn").classList.add("updating");
+      $("settings-btn").classList.add("update-available");
+    }
+  } catch { /* silent */ }
+}
+
+// --- Check update button ---
+$("check-update-btn").addEventListener("click", async () => {
+  const btn = $("check-update-btn");
+  btn.disabled = true;
+  btn.textContent = "checking...";
+  btn.classList.remove("updating");
+  $("settings-btn").classList.remove("update-available");
+  try {
+    const upd = await SnatchAPI.checkUpdate();
+    if (upd?.update_available) {
+      btn.textContent = "updating...";
+      btn.classList.add("updating");
+      $("settings-btn").classList.add("update-available");
+      const res = await SnatchAPI.update();
+      if (res?.ok) {
+        btn.textContent = `installing v${res.version}...`;
+        // Companion exits — poll until it comes back
+        setTimeout(async function poll() {
+          try {
+            const h = await SnatchAPI.health();
+            btn.textContent = "check update";
+            btn.classList.remove("updating");
+            btn.disabled = false;
+            $("settings-btn").classList.remove("update-available");
+            $("version-link").textContent = `v${h.version}`;
+            $("version-link").href = `https://github.com/${GITHUB_REPO}/releases/tag/v${h.version}`;
+          } catch {
+            setTimeout(poll, 2000);
+          }
+        }, 3000);
+        return; // don't re-enable btn until poll finishes
+      } else {
+        btn.textContent = upd.error || "update failed";
+      }
+    } else if (upd?.error) {
+      btn.textContent = "error";
     } else {
-      $("banner-text").textContent = res?.error || "Update failed";
-      btn.textContent = "Retry";
-      btn.disabled = false;
+      btn.textContent = "up to date";
     }
   } catch {
-    $("banner-text").textContent = "Update failed — companion offline";
-    btn.textContent = "Retry";
-    btn.disabled = false;
+    btn.textContent = "offline";
   }
+  btn.disabled = false;
+  setTimeout(() => {
+    btn.textContent = "check update";
+    btn.classList.remove("updating");
+    $("settings-btn").classList.remove("update-available");
+  }, 3000);
 });
 
 init();

@@ -140,6 +140,14 @@ header {
   transition: color 0.2s;
 }
 #settings-btn:hover { color: var(--text-dim); }
+#settings-btn.update-available {
+  color: var(--ok);
+  animation: update-pulse 2s ease-in-out infinite;
+}
+@keyframes update-pulse {
+  0%, 100% { color: var(--ok); }
+  50% { color: var(--ok-glow); }
+}
 
 /* --- Status dot --- */
 .dot {
@@ -429,6 +437,44 @@ button.banner-btn:disabled { opacity: 0.5; cursor: wait; }
 /* --- Settings --- */
 .settings-body {
   padding: 10px 12px 14px;
+}
+
+/* --- Update row --- */
+.update-row {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.version-label {
+  color: var(--text-muted);
+  font: 500 11px var(--font);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.version-label:hover { color: var(--text-dim); }
+
+.check-update-btn {
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font: 400 10px var(--font);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.check-update-btn:hover { color: var(--text-dim); border-color: var(--text-muted); }
+.check-update-btn:disabled { opacity: 0.5; cursor: wait; }
+.check-update-btn.updating {
+  color: var(--ok);
+  border-color: var(--ok-border);
+  animation: pulse-update 1.5s ease-in-out infinite;
+}
+@keyframes pulse-update {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .settings-body label:not(.toggle) {
