@@ -5,112 +5,78 @@
 <h1 align="center">Snatch</h1>
 
 <p align="center">
-  Video stream downloader for Chrome.<br/>
-  Detects HLS/DASH streams on any page — one click to download as mp4.
+  Chrome extension + companion app for downloading video streams.<br/>
+  See a video playing? Click the icon → it's downloading.
 </p>
 
-<p align="center">
-  <b>Local only</b> — everything runs on your machine, nothing leaves localhost<br/>
-  <b>Open source</b> — Chrome extension + Python daemon, fully transparent
-</p>
+---
 
-## How it works
+Snatch is a Chrome extension paired with a small local app. The extension detects video streams on any website. The companion app downloads them to your computer as mp4 files.
 
-1. Browse any page with video (HLS/DASH streams)
-2. The extension badge lights up with detected streams
-3. Click the extension icon → pick resolution → **Download**
-4. The file appears in your Downloads folder
+**No accounts, no cloud, no subscriptions.** Everything runs on your machine. Your downloads and history never leave localhost.
 
-Under the hood: the extension intercepts `.m3u8` / `.mpd` / `.mp4` requests and sends them to a local Python daemon that uses `yt-dlp` + `ffmpeg` to download and merge streams.
+## Getting started
 
-```
-Chrome Extension (MV3)              Python Daemon (localhost:9111)
-┌──────────────────────┐            ┌───────────────────────────┐
-│ background.js         │──POST────▶│ FastAPI server             │
-│  webRequest listener  │           │  POST /download            │
-│  context menu         │◀──GET────│  GET  /queue               │
-│ content.js            │           │  POST /probe (HLS parser)  │
-│  XHR/fetch hook       │           │  GET  /completed           │
-│ popup (tabs UI)       │           │  GET/PUT /settings         │
-│  detected + queue     │           │                            │
-│  completed history    │           │ yt-dlp + ffmpeg             │
-└──────────────────────┘            │  HLS/DASH → mp4            │
-                                    └───────────────────────────┘
-```
+**Step 1.** Install the Chrome extension from [**Releases**](https://github.com/olegperegudov/snatch/releases/latest) — download `snatch-extension.zip`, unzip, then load in `chrome://extensions/` (Developer mode → Load unpacked).
 
-## Quick start
+**Step 2.** Install the companion app from the same [**Releases**](https://github.com/olegperegudov/snatch/releases/latest) page — run the installer. It sits in your system tray and handles downloads.
 
-### Prerequisites
+**Step 3.** Browse the web. When Snatch detects a video stream, click the extension icon → pick resolution → download. That's it.
 
-- **Python 3.10+**
-- **ffmpeg** in PATH (`sudo apt install ffmpeg` or [download](https://ffmpeg.org/download.html))
-- **Chrome/Chromium** browser
+The companion app auto-updates — you'll see a green indicator in settings when a new version is available.
 
-### 1. Set up the daemon
+## Why Snatch
 
-```bash
-cd snatch/daemon
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Load the extension
-
-1. Open `chrome://extensions/`
-2. Enable **Developer mode** (top right)
-3. Click **Load unpacked** → select `snatch/extension/` folder
-4. *(Optional)* Enable in Incognito: extension details → "Allow in Incognito"
-
-### 3. Run
-
-```bash
-cd snatch/daemon
-.venv/bin/python main.py
-```
-
-The daemon runs on `http://127.0.0.1:9111`. You can also add a shell alias:
-
-```bash
-alias snatch="~/snatch/daemon/.venv/bin/python ~/snatch/daemon/main.py"
-```
-
-## Features
-
-- **Auto-detection** — catches HLS (.m3u8) and DASH (.mpd) streams automatically
-- **Resolution picker** — choose best / 1080p / 720p / 480p, or let it pick the best
-- **Right-click menu** — right-click → Snatch → pick resolution from context menu
-- **Download queue** — concurrent downloads with configurable parallelism
-- **History & dedup** — tracks completed downloads, skips duplicates
-- **Clean downloads** — temp dir for partial files, only finished mp4s in your folder
-- **Show in folder** — opens Explorer with the file selected (WSL2 compatible)
-- **Works in Incognito** — enable in extension settings
+- **Private** — no data leaves your machine, no analytics, no telemetry
+- **Simple** — one click to download, no configuration needed
+- **Smart** — auto-detects streams, picks the best quality, skips duplicates
+- **Open source** — inspect every line of code
 
 ## Settings
 
 Click the gear icon in the popup:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **Resolution** | best | Preferred download resolution |
-| **Only show selected** | off | Filter detected list to chosen resolution |
-| **Skip downloaded** | on | Check history before downloading |
-| **Download folder** | ~/Downloads | Where files are saved |
-| **Max parallel** | 2 | Concurrent download limit |
+- **Resolution** — preferred quality (best / 1080p / 720p / 480p)
+- **Download folder** — where files are saved
+- **Skip downloaded** — don't re-download videos you already have
+- **Max parallel** — how many downloads run at once
 
-## Privacy
+---
 
-- The daemon runs on `localhost:9111` — no external connections except to the video source
-- No analytics, no tracking, no telemetry
-- Download history stored locally in `daemon/history.json`
-- Fully open source — inspect every line of code
+<details>
+<summary><b>Alternative: Python daemon (Linux / macOS)</b></summary>
 
-## Tech stack
+Instead of the companion app, you can run the Python daemon directly.
 
-- [Chrome Extensions MV3](https://developer.chrome.com/docs/extensions/mv3/) — webRequest, service worker
-- [FastAPI](https://fastapi.tiangolo.com/) — local HTTP daemon
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — stream downloading
-- [ffmpeg](https://ffmpeg.org/) — stream merging
+**Prerequisites:** Python 3.10+, ffmpeg in PATH
+
+```bash
+cd snatch/daemon
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python main.py
+```
+
+</details>
+
+<details>
+<summary><b>How it works under the hood</b></summary>
+
+The Chrome extension monitors network requests for `.m3u8` (HLS), `.mpd` (DASH), and `.mp4` streams. When you click download, it sends the stream URL to the companion app running on `localhost:9111`. The companion uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) + [ffmpeg](https://ffmpeg.org/) to download and merge stream segments into a single mp4 file.
+
+```
+Chrome Extension                    Companion App (localhost:9111)
+┌────────────────────┐              ┌────────────────────────────┐
+│ Detect streams     │───download──▶│ Download queue             │
+│ Pick resolution    │◀──progress──│ yt-dlp + ffmpeg             │
+│ Show queue         │              │ History & dedup             │
+│ Track history      │              │ Settings                   │
+└────────────────────┘              └────────────────────────────┘
+```
+
+**Built with:** Chrome Extensions MV3 · Tauri v2 (Rust) · FastAPI (Python) · yt-dlp · ffmpeg
+
+</details>
 
 ## License
 
