@@ -174,9 +174,9 @@ def handle_launch_companion():
         log.error("launch_companion: snatch-companion.exe not found")
         return {"ok": False, "error": "snatch-companion.exe not found"}
     try:
-        log.info("Launching: cmd.exe /c start \"\" \"%s\"", exe)
+        log.info("Launching: powershell Start-Process '%s'", exe)
         subprocess.Popen(
-            ["cmd.exe", "/c", "start", "", exe],
+            ["powershell.exe", "-Command", f"Start-Process '{exe}'"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
