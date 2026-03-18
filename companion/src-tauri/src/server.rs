@@ -153,6 +153,7 @@ pub async fn start_server(state: Arc<AppState>) {
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:9111").await
         .expect("Failed to bind to port 9111");
+    eprintln!("[Snatch] HTTP server listening on :9111");
     axum::serve(listener, app).await.ok();
 }
 
@@ -163,6 +164,7 @@ async fn health() -> Json<Value> {
 }
 
 async fn shutdown_server() -> Json<Value> {
+    eprintln!("[Snatch] Shutdown requested");
     tokio::spawn(async {
         tokio::time::sleep(std::time::Duration::from_millis(300)).await;
         std::process::exit(0);
@@ -580,48 +582,68 @@ async fn check_update() -> Json<Value> {
 
 async fn do_update() -> Json<Value> {
     let current = env!("CARGO_PKG_VERSION");
+    eprintln!("[Snatch] Update check: current={current}");
 
     let (version, download_url) = match fetch_latest_release().await {
         Ok(r) => r,
-        Err(e) => return Json(json!({"ok": false, "error": e})),
+        Err(e) => {
+            eprintln!("[Snatch] Update error: {e}");
+            return Json(json!({"ok": false, "error": e}));
+        }
     };
 
     if !version_newer(&version, current) {
+        eprintln!("[Snatch] Already up to date ({current} >= {version})");
         return Json(json!({"ok": false, "error": "Already up to date"}));
     }
 
-    // Download installer to temp
+    eprintln!("[Snatch] Downloading v{version} from {download_url}");
     let temp_dir = std::env::temp_dir();
     let installer_path = temp_dir.join(format!("Snatch_{version}_x64-setup.exe"));
 
     let response = match reqwest::get(&download_url).await {
         Ok(r) => r,
-        Err(e) => return Json(json!({"ok": false, "error": format!("Download failed: {e}")})),
+        Err(e) => {
+            eprintln!("[Snatch] Download failed: {e}");
+            return Json(json!({"ok": false, "error": format!("Download failed: {e}")}));
+        }
     };
 
     let bytes = match response.bytes().await {
-        Ok(b) => b,
-        Err(e) => return Json(json!({"ok": false, "error": format!("Download failed: {e}")})),
+        Ok(b) => {
+            eprintln!("[Snatch] Downloaded {} bytes", b.len());
+            b
+        }
+        Err(e) => {
+            eprintln!("[Snatch] Download read failed: {e}");
+            return Json(json!({"ok": false, "error": format!("Download failed: {e}")}));
+        }
     };
 
     if let Err(e) = std::fs::write(&installer_path, &bytes) {
+        eprintln!("[Snatch] Save failed: {e}");
         return Json(json!({"ok": false, "error": format!("Save failed: {e}")}));
     }
+    eprintln!("[Snatch] Saved installer to {}", installer_path.display());
 
     // Launch installer silently and exit
     #[cfg(target_os = "windows")]
     {
         use std::process::Command as StdCommand;
+        eprintln!("[Snatch] Launching installer /S...");
         match StdCommand::new(&installer_path).arg("/S").spawn() {
             Ok(_) => {
-                // Give the HTTP response time to send, then exit
+                eprintln!("[Snatch] Installer launched, exiting in 500ms");
                 tokio::spawn(async {
                     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
                     std::process::exit(0);
                 });
                 Json(json!({"ok": true, "version": version}))
             }
-            Err(e) => Json(json!({"ok": false, "error": format!("Failed to launch installer: {e}")})),
+            Err(e) => {
+                eprintln!("[Snatch] Failed to launch installer: {e}");
+                Json(json!({"ok": false, "error": format!("Failed to launch installer: {e}")}))
+            }
         }
     }
 

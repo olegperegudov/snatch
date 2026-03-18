@@ -10,6 +10,7 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 
 pub fn run() {
+    eprintln!("[Snatch] Companion v{} starting", env!("CARGO_PKG_VERSION"));
     // Init DB
     let db = Arc::new(db::Db::new(&db_path()));
     db.recover_interrupted();
