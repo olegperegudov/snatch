@@ -90,10 +90,14 @@ pub async fn download(
     if force_overwrite {
         cmd.arg("--force-overwrite");
     }
+    // Use page URL when available — yt-dlp's site extractors handle auth/referer
+    // properly, while raw stream URLs often get 403
     if !page_url.is_empty() {
         cmd.args(["--referer", &page_url]);
+        cmd.arg(&page_url);
+    } else {
+        cmd.arg(&url);
     }
-    cmd.arg(&url);
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
 

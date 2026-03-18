@@ -1,0 +1,683 @@
+13:24:56 INFO === Native host started (pid 802943) ===
+13:24:56 DEBUG action=health id=1
+13:24:56 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:24:56 DEBUG action=health id=2
+13:24:56 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:24:56 DEBUG action=health id=3
+13:24:56 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:24:56 INFO stdin closed, exiting
+13:24:56 INFO === Native host exiting ===
+13:24:58 INFO === Native host started (pid 802970) ===
+13:24:58 DEBUG action=ping id=4
+13:24:58 INFO stdin closed, exiting
+13:24:58 INFO === Native host exiting ===
+13:25:09 INFO === Native host started (pid 803028) ===
+13:25:09 DEBUG action=launch_companion id=5
+13:25:09 INFO launch_companion requested
+13:25:09 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+13:25:09 ERROR launch_companion: Snatch.exe not found
+13:25:09 WARNING action=launch_companion error: Snatch.exe not found
+13:25:11 DEBUG action=launch_companion id=6
+13:25:11 INFO launch_companion requested
+13:25:11 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+13:25:11 ERROR launch_companion: Snatch.exe not found
+13:25:11 WARNING action=launch_companion error: Snatch.exe not found
+13:25:30 DEBUG action=launch_companion id=7
+13:25:30 INFO launch_companion requested
+13:25:30 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+13:25:30 ERROR launch_companion: Snatch.exe not found
+13:25:30 WARNING action=launch_companion error: Snatch.exe not found
+13:25:31 DEBUG action=launch_companion id=8
+13:25:31 INFO launch_companion requested
+13:25:31 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+13:25:31 ERROR launch_companion: Snatch.exe not found
+13:25:31 WARNING action=launch_companion error: Snatch.exe not found
+13:25:34 INFO stdin closed, exiting
+13:25:34 INFO === Native host exiting ===
+13:25:35 INFO === Native host started (pid 803195) ===
+13:25:35 DEBUG action=health id=1
+13:25:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:25:35 DEBUG action=health id=2
+13:25:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:25:35 DEBUG action=health id=3
+13:25:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:25:35 INFO stdin closed, exiting
+13:25:35 INFO === Native host exiting ===
+13:26:00 INFO === Native host started (pid 803404) ===
+13:26:00 DEBUG action=health id=1
+13:26:00 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:26:00 DEBUG action=health id=2
+13:26:00 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:26:00 DEBUG action=health id=3
+13:26:00 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:26:00 INFO stdin closed, exiting
+13:26:00 INFO === Native host exiting ===
+13:26:01 INFO === Native host started (pid 803443) ===
+13:26:01 DEBUG action=health id=1
+13:26:01 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:26:01 DEBUG action=health id=2
+13:26:01 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:26:01 DEBUG action=health id=3
+13:26:01 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:26:01 INFO stdin closed, exiting
+13:26:01 INFO === Native host exiting ===
+13:26:43 INFO === Native host started (pid 803618) ===
+13:26:43 DEBUG action=get_logs id=4
+13:27:26 INFO stdin closed, exiting
+13:27:26 INFO === Native host exiting ===
+13:32:11 INFO === Native host started (pid 804663) ===
+13:32:11 DEBUG action=health id=1
+13:32:11 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:32:11 DEBUG action=health id=2
+13:32:11 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:32:11 DEBUG action=health id=3
+13:32:11 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+13:32:11 INFO stdin closed, exiting
+13:32:11 INFO === Native host exiting ===
+16:29:16 INFO === Native host started (pid 852258) ===
+16:29:16 DEBUG action=health id=1
+16:29:16 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:29:16 DEBUG action=health id=2
+16:29:16 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:29:16 INFO stdin closed, exiting
+16:29:16 INFO === Native host exiting ===
+16:29:17 INFO === Native host started (pid 852297) ===
+16:29:17 DEBUG action=health id=1
+16:29:17 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:29:17 DEBUG action=health id=2
+16:29:17 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:29:17 DEBUG action=health id=3
+16:29:17 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:29:17 INFO stdin closed, exiting
+16:29:17 INFO === Native host exiting ===
+16:29:39 INFO === Native host started (pid 852410) ===
+16:29:39 DEBUG action=health id=1
+16:29:39 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:29:39 DEBUG action=health id=2
+16:29:39 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:29:39 DEBUG action=health id=3
+16:29:39 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:29:39 INFO stdin closed, exiting
+16:29:39 INFO === Native host exiting ===
+16:43:01 INFO === Native host started (pid 855075) ===
+16:43:01 DEBUG action=health id=1
+16:43:01 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:01 DEBUG action=health id=2
+16:43:01 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:01 DEBUG action=health id=3
+16:43:01 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:01 INFO stdin closed, exiting
+16:43:01 INFO === Native host exiting ===
+16:43:09 INFO === Native host started (pid 855143) ===
+16:43:09 DEBUG action=health id=1
+16:43:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:09 DEBUG action=health id=2
+16:43:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:09 DEBUG action=health id=3
+16:43:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:09 INFO stdin closed, exiting
+16:43:09 INFO === Native host exiting ===
+16:43:14 INFO === Native host started (pid 855196) ===
+16:43:14 DEBUG action=health id=1
+16:43:14 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:14 DEBUG action=health id=2
+16:43:14 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:14 DEBUG action=health id=3
+16:43:14 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:43:14 INFO stdin closed, exiting
+16:43:14 INFO === Native host exiting ===
+16:46:06 INFO === Native host started (pid 855938) ===
+16:46:06 DEBUG action=health id=1
+16:46:06 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:46:06 DEBUG action=health id=2
+16:46:06 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:46:06 INFO stdin closed, exiting
+16:46:06 INFO === Native host exiting ===
+16:46:09 INFO === Native host started (pid 855982) ===
+16:46:09 DEBUG action=health id=1
+16:46:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:46:09 DEBUG action=health id=2
+16:46:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:46:09 DEBUG action=health id=3
+16:46:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:46:09 INFO stdin closed, exiting
+16:46:09 INFO === Native host exiting ===
+16:46:52 INFO === Native host started (pid 856183) ===
+16:46:52 DEBUG action=health id=1
+16:46:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:46:52 DEBUG action=health id=2
+16:46:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:46:52 DEBUG action=health id=3
+16:46:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:46:52 INFO stdin closed, exiting
+16:46:52 INFO === Native host exiting ===
+16:59:02 INFO === Native host started (pid 858621) ===
+16:59:02 DEBUG action=health id=1
+16:59:02 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:02 DEBUG action=health id=2
+16:59:02 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:02 INFO stdin closed, exiting
+16:59:02 INFO === Native host exiting ===
+16:59:04 INFO === Native host started (pid 858654) ===
+16:59:04 DEBUG action=health id=1
+16:59:04 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:04 DEBUG action=health id=2
+16:59:04 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:04 DEBUG action=health id=3
+16:59:04 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:04 INFO stdin closed, exiting
+16:59:04 INFO === Native host exiting ===
+16:59:15 INFO === Native host started (pid 858737) ===
+16:59:15 DEBUG action=health id=1
+16:59:15 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:15 DEBUG action=health id=2
+16:59:15 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:15 DEBUG action=health id=3
+16:59:15 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:15 INFO stdin closed, exiting
+16:59:15 INFO === Native host exiting ===
+16:59:22 INFO === Native host started (pid 858893) ===
+16:59:22 DEBUG action=health id=1
+16:59:22 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:22 DEBUG action=health id=2
+16:59:22 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:22 INFO stdin closed, exiting
+16:59:22 INFO === Native host exiting ===
+16:59:58 INFO === Native host started (pid 859070) ===
+16:59:58 DEBUG action=health id=1
+16:59:58 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:58 DEBUG action=health id=2
+16:59:58 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:58 DEBUG action=health id=3
+16:59:58 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+16:59:58 INFO stdin closed, exiting
+16:59:58 INFO === Native host exiting ===
+17:55:59 INFO === Native host started (pid 1334874) ===
+17:55:59 DEBUG action=health id=1
+17:55:59 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+17:55:59 DEBUG action=health id=2
+17:55:59 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+17:55:59 INFO stdin closed, exiting
+17:55:59 INFO === Native host exiting ===
+17:56:00 INFO === Native host started (pid 1334914) ===
+17:56:00 DEBUG action=health id=1
+17:56:00 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+17:56:00 DEBUG action=health id=2
+17:56:00 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+17:56:00 DEBUG action=health id=3
+17:56:00 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+17:56:00 INFO stdin closed, exiting
+17:56:00 INFO === Native host exiting ===
+18:03:35 INFO === Native host started (pid 1336531) ===
+18:03:35 DEBUG action=health id=1
+18:03:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:03:35 DEBUG action=health id=2
+18:03:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:03:35 INFO stdin closed, exiting
+18:03:35 INFO === Native host exiting ===
+18:03:39 INFO === Native host started (pid 1336583) ===
+18:03:39 DEBUG action=health id=1
+18:03:39 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:03:39 DEBUG action=health id=2
+18:03:39 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:03:39 DEBUG action=health id=3
+18:03:39 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:03:39 INFO stdin closed, exiting
+18:03:39 INFO === Native host exiting ===
+18:04:08 INFO === Native host started (pid 1336817) ===
+18:04:08 DEBUG action=health id=1
+18:04:08 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:04:08 DEBUG action=health id=2
+18:04:08 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:04:08 INFO stdin closed, exiting
+18:04:08 INFO === Native host exiting ===
+18:04:09 INFO === Native host started (pid 1336853) ===
+18:04:09 DEBUG action=health id=1
+18:04:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:04:09 DEBUG action=health id=2
+18:04:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:04:09 DEBUG action=health id=3
+18:04:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:04:09 INFO stdin closed, exiting
+18:04:09 INFO === Native host exiting ===
+18:06:23 INFO === Native host started (pid 1337319) ===
+18:06:23 DEBUG action=get_logs id=4
+18:10:44 INFO stdin closed, exiting
+18:10:44 INFO === Native host exiting ===
+18:12:51 INFO === Native host started (pid 1341072) ===
+18:12:51 DEBUG action=health id=1
+18:12:51 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:12:51 DEBUG action=health id=2
+18:12:51 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:12:51 INFO stdin closed, exiting
+18:12:51 INFO === Native host exiting ===
+18:18:04 INFO === Native host started (pid 1342393) ===
+18:18:04 DEBUG action=health id=1
+18:18:04 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:18:04 DEBUG action=health id=2
+18:18:04 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:18:04 INFO stdin closed, exiting
+18:18:04 INFO === Native host exiting ===
+18:18:06 INFO === Native host started (pid 1342433) ===
+18:18:06 DEBUG action=health id=1
+18:18:06 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:18:06 DEBUG action=health id=2
+18:18:06 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:18:06 DEBUG action=health id=3
+18:18:06 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:18:06 INFO stdin closed, exiting
+18:18:06 INFO === Native host exiting ===
+18:18:07 INFO === Native host started (pid 1342462) ===
+18:18:07 DEBUG action=ping id=4
+18:18:07 INFO stdin closed, exiting
+18:18:07 INFO === Native host exiting ===
+18:18:08 INFO === Native host started (pid 1342483) ===
+18:18:08 DEBUG action=launch_companion id=5
+18:18:08 INFO launch_companion requested
+18:18:08 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+18:18:08 ERROR launch_companion: Snatch.exe not found
+18:18:08 WARNING action=launch_companion error: Snatch.exe not found
+18:18:09 INFO stdin closed, exiting
+18:18:09 INFO === Native host exiting ===
+18:18:19 INFO === Native host started (pid 1342540) ===
+18:18:19 DEBUG action=launch_companion id=6
+18:18:19 INFO launch_companion requested
+18:18:19 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+18:18:19 ERROR launch_companion: Snatch.exe not found
+18:18:19 WARNING action=launch_companion error: Snatch.exe not found
+18:18:23 INFO stdin closed, exiting
+18:18:23 INFO === Native host exiting ===
+18:18:53 INFO === Native host started (pid 1342713) ===
+18:18:53 DEBUG action=health id=1
+18:18:53 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:18:53 DEBUG action=health id=2
+18:18:53 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:18:53 DEBUG action=health id=3
+18:18:53 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:18:53 INFO stdin closed, exiting
+18:18:53 INFO === Native host exiting ===
+18:18:54 INFO === Native host started (pid 1342735) ===
+18:18:54 DEBUG action=ping id=4
+18:18:54 INFO stdin closed, exiting
+18:18:54 INFO === Native host exiting ===
+18:18:54 INFO === Native host started (pid 1342756) ===
+18:18:54 DEBUG action=launch_companion id=5
+18:18:54 INFO launch_companion requested
+18:18:54 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+18:18:54 ERROR launch_companion: Snatch.exe not found
+18:18:54 WARNING action=launch_companion error: Snatch.exe not found
+18:18:56 INFO stdin closed, exiting
+18:18:56 INFO === Native host exiting ===
+18:20:42 INFO === Native host started (pid 1343174) ===
+18:20:42 DEBUG action=health id=1
+18:20:42 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:20:42 DEBUG action=health id=2
+18:20:42 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:20:42 DEBUG action=health id=3
+18:20:42 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+18:20:42 INFO stdin closed, exiting
+18:20:42 INFO === Native host exiting ===
+19:59:52 INFO === Native host started (pid 1356018) ===
+19:59:52 DEBUG action=health id=1
+19:59:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+19:59:52 DEBUG action=health id=2
+19:59:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+19:59:52 DEBUG action=health id=3
+19:59:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+19:59:52 INFO stdin closed, exiting
+19:59:52 INFO === Native host exiting ===
+19:59:54 INFO === Native host started (pid 1356041) ===
+19:59:54 DEBUG action=ping id=4
+19:59:54 INFO stdin closed, exiting
+19:59:54 INFO === Native host exiting ===
+19:59:54 INFO === Native host started (pid 1356062) ===
+19:59:54 DEBUG action=launch_companion id=5
+19:59:54 INFO launch_companion requested
+19:59:54 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+19:59:54 ERROR launch_companion: Snatch.exe not found
+19:59:54 WARNING action=launch_companion error: Snatch.exe not found
+19:59:55 INFO stdin closed, exiting
+19:59:55 INFO === Native host exiting ===
+20:01:18 INFO === Native host started (pid 1356355) ===
+20:01:18 DEBUG action=launch_companion id=6
+20:01:18 INFO launch_companion requested
+20:01:18 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\Snatch.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/Snatch.exe, exists: False)
+20:01:18 ERROR launch_companion: Snatch.exe not found
+20:01:18 WARNING action=launch_companion error: Snatch.exe not found
+20:20:08 INFO stdin closed, exiting
+20:20:08 INFO === Native host exiting ===
+01:25:31 INFO === Native host started (pid 1413947) ===
+01:25:31 DEBUG action=health id=1
+01:25:31 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:31 DEBUG action=health id=2
+01:25:31 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:31 DEBUG action=health id=3
+01:25:31 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:31 DEBUG action=health id=4
+01:25:31 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:31 DEBUG action=health id=5
+01:25:31 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:31 DEBUG action=ping id=6
+01:25:35 INFO === Native host started (pid 1413975) ===
+01:25:35 DEBUG action=launch_companion id=7
+01:25:35 INFO launch_companion requested
+01:25:35 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/snatch-companion.exe, exists: True)
+01:25:35 INFO Launching: cmd.exe /c start "" "C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe"
+01:25:35 INFO launch_companion: started successfully
+01:25:35 INFO stdin closed, exiting
+01:25:35 INFO === Native host exiting ===
+01:25:36 INFO === Native host started (pid 1414006) ===
+01:25:36 DEBUG action=launch_companion id=8
+01:25:36 INFO launch_companion requested
+01:25:36 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/snatch-companion.exe, exists: True)
+01:25:36 INFO Launching: cmd.exe /c start "" "C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe"
+01:25:36 INFO launch_companion: started successfully
+01:25:44 INFO stdin closed, exiting
+01:25:44 INFO === Native host exiting ===
+01:25:46 INFO === Native host started (pid 1414068) ===
+01:25:46 DEBUG action=health id=1
+01:25:46 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:46 DEBUG action=health id=2
+01:25:46 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:46 DEBUG action=health id=3
+01:25:46 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:46 DEBUG action=health id=4
+01:25:46 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:46 DEBUG action=health id=5
+01:25:46 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:46 INFO stdin closed, exiting
+01:25:46 INFO === Native host exiting ===
+01:25:52 INFO === Native host started (pid 1414121) ===
+01:25:52 DEBUG action=health id=1
+01:25:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:52 DEBUG action=health id=2
+01:25:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:52 DEBUG action=health id=3
+01:25:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:52 DEBUG action=health id=4
+01:25:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:52 DEBUG action=health id=5
+01:25:52 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:25:52 INFO stdin closed, exiting
+01:25:52 INFO === Native host exiting ===
+01:34:02 INFO === Native host started (pid 1417998) ===
+01:34:02 DEBUG action=health id=1
+01:34:02 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:02 DEBUG action=health id=2
+01:34:02 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:02 DEBUG action=health id=3
+01:34:02 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:02 DEBUG action=health id=4
+01:34:02 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:02 DEBUG action=health id=5
+01:34:02 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:02 INFO stdin closed, exiting
+01:34:02 INFO === Native host exiting ===
+01:34:20 INFO === Native host started (pid 1418188) ===
+01:34:20 DEBUG action=health id=1
+01:34:20 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:20 DEBUG action=health id=2
+01:34:20 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:20 INFO stdin closed, exiting
+01:34:20 INFO === Native host exiting ===
+01:34:25 INFO === Native host started (pid 1418239) ===
+01:34:25 DEBUG action=health id=1
+01:34:25 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:25 DEBUG action=health id=2
+01:34:25 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:25 DEBUG action=health id=3
+01:34:25 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:25 INFO stdin closed, exiting
+01:34:25 INFO === Native host exiting ===
+01:34:35 INFO === Native host started (pid 1418312) ===
+01:34:35 DEBUG action=health id=1
+01:34:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:35 DEBUG action=health id=2
+01:34:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:35 DEBUG action=health id=3
+01:34:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:35 DEBUG action=health id=4
+01:34:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:35 DEBUG action=health id=5
+01:34:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:34:35 INFO stdin closed, exiting
+01:34:35 INFO === Native host exiting ===
+01:35:24 INFO === Native host started (pid 1418515) ===
+01:35:24 DEBUG action=health id=1
+01:35:24 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:35:24 DEBUG action=health id=2
+01:35:24 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:35:24 DEBUG action=health id=3
+01:35:24 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:35:24 INFO stdin closed, exiting
+01:35:24 INFO === Native host exiting ===
+01:35:26 INFO === Native host started (pid 1418540) ===
+01:35:26 DEBUG action=ping id=4
+01:35:26 DEBUG action=launch_companion id=5
+01:35:26 INFO launch_companion requested
+01:35:26 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/snatch-companion.exe, exists: True)
+01:35:26 INFO Launching: cmd.exe /c start "" "C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe"
+01:35:26 INFO launch_companion: started successfully
+01:35:26 INFO stdin closed, exiting
+01:35:26 INFO === Native host exiting ===
+01:35:26 INFO === Native host started (pid 1418563) ===
+01:35:26 DEBUG action=launch_companion id=6
+01:35:26 INFO launch_companion requested
+01:35:26 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/snatch-companion.exe, exists: True)
+01:35:26 INFO Launching: cmd.exe /c start "" "C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe"
+01:35:26 INFO launch_companion: started successfully
+01:35:27 INFO stdin closed, exiting
+01:35:27 INFO === Native host exiting ===
+01:36:53 INFO === Native host started (pid 1419008) ===
+01:36:53 DEBUG action=health id=1
+01:36:53 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:36:53 DEBUG action=health id=2
+01:36:53 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:36:53 INFO stdin closed, exiting
+01:36:53 INFO === Native host exiting ===
+01:38:26 INFO === Native host started (pid 1419468) ===
+01:38:26 DEBUG action=health id=1
+01:38:26 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:26 DEBUG action=health id=2
+01:38:26 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:26 INFO stdin closed, exiting
+01:38:26 INFO === Native host exiting ===
+01:38:35 INFO === Native host started (pid 1419536) ===
+01:38:35 DEBUG action=health id=1
+01:38:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:35 DEBUG action=health id=2
+01:38:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:35 DEBUG action=health id=3
+01:38:35 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:35 INFO stdin closed, exiting
+01:38:35 INFO === Native host exiting ===
+01:38:36 INFO === Native host started (pid 1419558) ===
+01:38:36 DEBUG action=ping id=4
+01:38:36 INFO stdin closed, exiting
+01:38:36 INFO === Native host exiting ===
+01:38:36 INFO === Native host started (pid 1419579) ===
+01:38:36 DEBUG action=launch_companion id=5
+01:38:36 INFO launch_companion requested
+01:38:36 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/snatch-companion.exe, exists: True)
+01:38:36 INFO Launching: powershell Start-Process 'C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe'
+01:38:36 INFO launch_companion: started successfully
+01:38:38 INFO stdin closed, exiting
+01:38:38 INFO === Native host exiting ===
+01:38:44 INFO === Native host started (pid 1419650) ===
+01:38:44 DEBUG action=health id=1
+01:38:44 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:44 DEBUG action=health id=2
+01:38:44 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:44 DEBUG action=health id=3
+01:38:44 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:44 INFO stdin closed, exiting
+01:38:44 INFO === Native host exiting ===
+01:38:49 INFO === Native host started (pid 1419704) ===
+01:38:49 DEBUG action=health id=1
+01:38:49 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:49 DEBUG action=health id=2
+01:38:49 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:49 DEBUG action=health id=3
+01:38:49 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:49 DEBUG action=health id=4
+01:38:49 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:49 DEBUG action=health id=5
+01:38:49 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:38:49 INFO stdin closed, exiting
+01:38:49 INFO === Native host exiting ===
+01:45:27 INFO === Native host started (pid 1446432) ===
+01:45:27 DEBUG action=health id=1
+01:45:27 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:45:27 DEBUG action=health id=2
+01:45:27 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:45:27 DEBUG action=health id=3
+01:45:27 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:45:27 INFO stdin closed, exiting
+01:45:27 INFO === Native host exiting ===
+01:50:37 INFO === Native host started (pid 1473181) ===
+01:50:37 DEBUG action=health id=1
+01:50:37 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:50:37 DEBUG action=health id=2
+01:50:37 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:50:37 DEBUG action=health id=3
+01:50:37 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:50:37 DEBUG action=health id=4
+01:50:37 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:50:37 DEBUG action=health id=5
+01:50:37 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:50:37 DEBUG action=health id=6
+01:50:37 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:50:37 DEBUG action=health id=7
+01:50:37 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+01:50:38 INFO === Native host started (pid 1473202) ===
+01:50:38 DEBUG action=ping id=10
+01:50:38 INFO stdin closed, exiting
+01:50:38 INFO === Native host exiting ===
+01:50:38 INFO === Native host started (pid 1473223) ===
+01:50:38 DEBUG action=launch_companion id=11
+01:50:38 INFO launch_companion requested
+01:50:38 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/snatch-companion.exe, exists: True)
+01:50:38 INFO Launching: powershell Start-Process 'C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe'
+01:50:38 INFO launch_companion: started successfully
+01:50:40 INFO stdin closed, exiting
+01:50:40 INFO === Native host exiting ===
+02:02:56 INFO === Native host started (pid 1488895) ===
+02:02:56 DEBUG action=health id=1
+02:02:56 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:02:56 DEBUG action=health id=2
+02:02:56 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:02:56 DEBUG action=health id=3
+02:02:56 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:02:56 INFO stdin closed, exiting
+02:02:56 INFO === Native host exiting ===
+02:03:13 INFO === Native host started (pid 1488988) ===
+02:03:13 DEBUG action=health id=1
+02:03:13 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:03:13 DEBUG action=health id=2
+02:03:13 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:03:13 DEBUG action=health id=3
+02:03:13 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:03:13 INFO stdin closed, exiting
+02:03:13 INFO === Native host exiting ===
+02:03:15 INFO === Native host started (pid 1489012) ===
+02:03:15 DEBUG action=ping id=4
+02:03:15 INFO stdin closed, exiting
+02:03:15 INFO === Native host exiting ===
+02:03:15 INFO === Native host started (pid 1489033) ===
+02:03:15 DEBUG action=launch_companion id=5
+02:03:15 INFO launch_companion requested
+02:03:15 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/snatch-companion.exe, exists: True)
+02:03:15 INFO Launching: powershell Start-Process 'C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe'
+02:03:15 INFO launch_companion: started successfully
+02:03:16 INFO stdin closed, exiting
+02:03:16 INFO === Native host exiting ===
+02:05:28 INFO === Native host started (pid 1489480) ===
+02:05:28 DEBUG action=health id=1
+02:05:28 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:05:28 DEBUG action=health id=2
+02:05:28 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:05:28 DEBUG action=health id=3
+02:05:28 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:05:28 DEBUG action=health id=4
+02:05:28 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:05:28 DEBUG action=health id=5
+02:05:28 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:05:28 DEBUG action=health id=6
+02:05:28 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:05:28 DEBUG action=health id=7
+02:05:28 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:05:29 INFO === Native host started (pid 1489508) ===
+02:05:29 DEBUG action=ping id=10
+02:05:29 INFO stdin closed, exiting
+02:05:29 INFO === Native host exiting ===
+02:05:29 INFO === Native host started (pid 1489529) ===
+02:05:29 DEBUG action=launch_companion id=11
+02:05:29 INFO launch_companion requested
+02:05:30 INFO Companion exe: C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe (wsl: /mnt/c/Users/olegp/AppData/Local/Snatch/snatch-companion.exe, exists: True)
+02:05:30 INFO Launching: powershell Start-Process 'C:\Users\olegp\AppData\Local\Snatch\snatch-companion.exe'
+02:05:30 INFO launch_companion: started successfully
+02:05:30 INFO stdin closed, exiting
+02:05:30 INFO === Native host exiting ===
+02:06:06 INFO === Native host started (pid 1489715) ===
+02:06:06 DEBUG action=health id=1
+02:06:06 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:06 DEBUG action=health id=2
+02:06:06 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:06 DEBUG action=health id=3
+02:06:06 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:06 INFO stdin closed, exiting
+02:06:06 INFO === Native host exiting ===
+02:06:09 INFO === Native host started (pid 1489764) ===
+02:06:09 DEBUG action=health id=1
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 DEBUG action=health id=2
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 DEBUG action=health id=3
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 DEBUG action=health id=4
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 DEBUG action=health id=5
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 DEBUG action=health id=6
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 DEBUG action=health id=7
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 DEBUG action=health id=8
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 DEBUG action=health id=9
+02:06:09 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:06:09 INFO stdin closed, exiting
+02:06:09 INFO === Native host exiting ===
+02:07:15 INFO === Native host started (pid 1490041) ===
+02:07:15 DEBUG action=health id=1
+02:07:15 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:07:15 DEBUG action=health id=2
+02:07:15 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:07:15 DEBUG action=health id=3
+02:07:15 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:07:15 INFO stdin closed, exiting
+02:07:15 INFO === Native host exiting ===
+02:07:36 INFO === Native host started (pid 1490151) ===
+02:07:36 DEBUG action=health id=1
+02:07:36 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:07:36 DEBUG action=health id=2
+02:07:36 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:07:36 DEBUG action=health id=3
+02:07:36 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:07:36 INFO stdin closed, exiting
+02:07:36 INFO === Native host exiting ===
+02:09:18 INFO === Native host started (pid 1490541) ===
+02:09:18 DEBUG action=health id=1
+02:09:18 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:09:18 DEBUG action=health id=2
+02:09:18 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:09:18 DEBUG action=health id=3
+02:09:18 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:09:18 DEBUG action=health id=4
+02:09:18 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:09:18 DEBUG action=health id=5
+02:09:18 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:09:18 DEBUG action=health id=6
+02:09:18 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
+02:09:18 DEBUG action=health id=7
+02:09:18 WARNING action=health error: daemon unreachable: [Errno 111] Connection refused
