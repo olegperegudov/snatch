@@ -486,39 +486,59 @@ async function silentUpdateCheck() {
 
 async function doUpdate() {
   const updateEl = $("companion-update");
-  updateEl.textContent = "updating...";
+  const statusEl = $("companion-status");
   updateEl.onclick = null;
+  setGear("starting", "Updating...");
+
+  // Step 1: Download + install (companion handles both, returns when done)
+  statusEl.textContent = "Downloading update...";
+  updateEl.textContent = "";
+  let version = "?";
   try {
     const res = await SnatchAPI.update();
-    if (res?.ok) {
-      updateEl.textContent = `installing v${res.version}...`;
-      setGear("starting", "Updating companion...");
-      // Wait for installer to finish, then relaunch
-      let launched = false;
-      setTimeout(async function poll() {
-        // Try health first (maybe installer auto-started it)
-        try {
-          const h = await SnatchAPI.health();
-          setGear("online", "Companion online");
-          $("companion-update").textContent = "up to date";
-          $("companion-update").className = "companion-update";
-          updateCompanionSection({ state: "running", health: h });
-          return;
-        } catch {}
-        // Not running — try to launch via native host
-        if (!launched) {
-          launched = true;
-          try { await SnatchAPI.launchCompanion(); } catch {}
-        }
-        // Keep polling
-        setTimeout(poll, 2000);
-      }, 5000); // 5s wait for installer to finish
-    } else {
-      updateEl.textContent = "update failed";
+    if (!res?.ok) {
+      statusEl.textContent = "Update failed";
+      updateEl.textContent = res?.error || "unknown error";
+      setGear("", "Update failed");
+      return;
     }
+    version = res.version || "?";
   } catch {
-    updateEl.textContent = "update failed";
+    statusEl.textContent = "Update failed";
+    updateEl.textContent = "connection lost";
+    setGear("", "Update failed");
+    return;
   }
+
+  // Step 2: Installer is running
+  statusEl.textContent = `Installing v${version}...`;
+  await new Promise((r) => setTimeout(r, 5000));
+
+  // Step 3: Launch companion
+  statusEl.textContent = "Launching companion...";
+  try { await SnatchAPI.launchCompanion(); } catch {}
+
+  // Step 4: Wait for it to come online
+  statusEl.textContent = "Starting server...";
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const h = await SnatchAPI.health();
+      if (h?.status === "ok") {
+        setGear("online", "Companion online");
+        statusEl.textContent = `Updated to v${h.version || version}`;
+        updateEl.textContent = "up to date";
+        updateEl.className = "companion-update";
+        updateCompanionSection({ state: "running", health: h });
+        return;
+      }
+    } catch {}
+  }
+
+  // Timeout
+  statusEl.textContent = "Update installed but companion not starting";
+  updateEl.textContent = "try Launch";
+  setGear("", "Companion offline");
 }
 
 // --- Logs viewer ---
