@@ -43,7 +43,7 @@ pub async fn download(
     preferred_resolution: String,
     force_overwrite: bool,
 ) {
-    let (url, title) = {
+    let (url, title, page_url) = {
         let mut lock = items.lock().await;
         let item = match lock.get_mut(&item_id) {
             Some(i) => i,
@@ -54,7 +54,7 @@ pub async fn download(
         }
         item.status = Status::Downloading;
         db.update_status(&item_id, "downloading");
-        (item.url.clone(), item.title.clone())
+        (item.url.clone(), item.title.clone(), item.page_url.clone())
     };
 
     let ytdlp = find_ytdlp();
@@ -89,6 +89,9 @@ pub async fn download(
     ]);
     if force_overwrite {
         cmd.arg("--force-overwrite");
+    }
+    if !page_url.is_empty() {
+        cmd.args(["--referer", &page_url]);
     }
     cmd.arg(&url);
     cmd.stdout(Stdio::piped());
