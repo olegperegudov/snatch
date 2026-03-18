@@ -23,7 +23,8 @@
   <!-- Companion banner -->
   <div id="companion-banner" class="banner hidden">
     <span id="banner-text">Companion app not found</span>
-    <a id="banner-link" class="banner-btn" target="_blank">Get Companion</a>
+    <button id="banner-launch" class="banner-btn hidden">Launch</button>
+    <a id="banner-download" class="banner-btn hidden" target="_blank">Download</a>
   </div>
 
   <!-- Downloads -->
@@ -93,6 +94,12 @@
         <input type="number" id="s-max-concurrent" min="1" max="10" value="2">
       </label>
       <button id="s-save">Save</button>
+      <div class="setting-row logs-row">
+        <button id="logs-btn" class="logs-btn">Logs</button>
+      </div>
+      <div id="logs-panel" class="logs-panel hidden">
+        <pre id="logs-content" class="logs-content"></pre>
+      </div>
     </div>
   </div>
 

@@ -163,6 +163,10 @@ header {
   background: var(--fail);
   box-shadow: 0 0 6px var(--fail-border);
 }
+.dot.installed {
+  background: var(--warn);
+  box-shadow: 0 0 6px var(--warn-border);
+}
 
 /* --- Companion banner --- */
 .banner {
@@ -574,3 +578,35 @@ button.banner-btn:disabled { opacity: 0.5; cursor: wait; }
   transition: opacity 0.15s;
 }
 .dir-history-remove:hover { opacity: 1; }
+
+/* --- Logs --- */
+.logs-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.logs-btn {
+  width: 100%;
+  padding: 5px;
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: 400 10px var(--font);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.logs-btn:hover { color: var(--text-dim); border-color: var(--text-muted); }
+.logs-btn:disabled { opacity: 0.5; cursor: wait; }
+.logs-panel {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.logs-content {
+  padding: 6px 8px;
+  font: 400 9px var(--font);
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}

@@ -349,16 +349,20 @@ document.addEventListener("click", (e) => {
 });
 
 // --- Daemon health + companion banner ---
-function showBanner(text, { link } = {}) {
+function showBanner(text, { action } = {}) {
   const banner = $("companion-banner");
-  const linkEl = $("banner-link");
+  const launchBtn = $("banner-launch");
+  const downloadBtn = $("banner-download");
   $("banner-text").textContent = text;
-  if (link) {
-    linkEl.textContent = link;
-    linkEl.href = RELEASES_URL;
-    linkEl.classList.remove("hidden");
-  } else {
-    linkEl.classList.add("hidden");
+
+  launchBtn.classList.add("hidden");
+  downloadBtn.classList.add("hidden");
+
+  if (action === "launch") {
+    launchBtn.classList.remove("hidden");
+  } else if (action === "download") {
+    downloadBtn.href = RELEASES_URL;
+    downloadBtn.classList.remove("hidden");
   }
   banner.classList.remove("hidden");
 }
@@ -366,6 +370,41 @@ function showBanner(text, { link } = {}) {
 function hideBanner() {
   $("companion-banner").classList.add("hidden");
 }
+
+// --- Launch companion button ---
+$("banner-launch").addEventListener("click", async () => {
+  const btn = $("banner-launch");
+  btn.textContent = "Launching...";
+  btn.disabled = true;
+  try {
+    await SnatchAPI.launchCompanion();
+    // Poll until daemon comes online (max ~15s)
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await SnatchAPI.health();
+        if (res && res.status === "ok") {
+          clearInterval(poll);
+          btn.textContent = "Launch";
+          btn.disabled = false;
+          checkDaemon();
+        }
+      } catch {
+        if (attempts > 7) {
+          clearInterval(poll);
+          btn.textContent = "Launch";
+          btn.disabled = false;
+          $("banner-text").textContent = "Companion didn't start — try manually";
+        }
+      }
+    }, 2000);
+  } catch {
+    btn.textContent = "Launch";
+    btn.disabled = false;
+    $("banner-text").textContent = "Could not launch — try manually";
+  }
+});
 
 function versionCompare(a, b) {
   const pa = a.split(".").map(Number), pb = b.split(".").map(Number);
@@ -378,28 +417,34 @@ function versionCompare(a, b) {
 
 async function checkDaemon() {
   const dot = $("status-dot");
-  try {
-    const res = await SnatchAPI.health();
+  const result = await SnatchAPI.detectInstallState();
+
+  if (result.state === "running") {
+    const health = result.health || {};
     dot.className = "dot online";
-    dot.title = SnatchAPI.getMode() === "native" ? "Connected (native)" : "Daemon online";
-    // Show version in settings
-    const ver = res?.version || "?";
+    dot.title = result.mode === "native" ? "Connected (native)" : "Daemon online";
+    const ver = health.version || "?";
     const versionLink = $("version-link");
     versionLink.textContent = `v${ver}`;
     versionLink.href = `https://github.com/${GITHUB_REPO}/releases/tag/v${ver}`;
     if (versionCompare(ver, MIN_COMPANION) < 0) {
-      showBanner(`Companion outdated (${ver})`, { link: "Get Companion" });
+      showBanner(`Companion outdated (${ver})`, { action: "download" });
     } else {
       hideBanner();
-      // Auto-check for updates (non-blocking)
       silentUpdateCheck();
     }
-  } catch {
-    dot.className = "dot offline";
-    dot.title = "Daemon offline";
-    $("version-link").textContent = "offline";
+  } else if (result.state === "installed") {
+    dot.className = "dot installed";
+    dot.title = "Companion installed but not running";
+    $("version-link").textContent = "not running";
     $("version-link").removeAttribute("href");
-    showBanner("Companion app not running", { link: "Get Companion" });
+    showBanner("Companion installed but not running", { action: "launch" });
+  } else {
+    dot.className = "dot offline";
+    dot.title = "Companion not installed";
+    $("version-link").textContent = "not installed";
+    $("version-link").removeAttribute("href");
+    showBanner("Companion app not installed", { action: "download" });
   }
 }
 
@@ -463,6 +508,35 @@ $("check-update-btn").addEventListener("click", async () => {
     btn.classList.remove("updating");
     $("settings-btn").classList.remove("update-available");
   }, 3000);
+});
+
+// --- Logs viewer ---
+$("logs-btn").addEventListener("click", async () => {
+  const panel = $("logs-panel");
+  const content = $("logs-content");
+  const btn = $("logs-btn");
+
+  if (!panel.classList.contains("hidden")) {
+    panel.classList.add("hidden");
+    btn.textContent = "Logs";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "loading...";
+  try {
+    const res = await SnatchAPI.getLogs(80);
+    const lines = res?.lines || [];
+    content.textContent = lines.length ? lines.join("\n") : "(empty log)";
+    panel.classList.remove("hidden");
+    panel.scrollTop = panel.scrollHeight;
+    btn.textContent = "Hide logs";
+  } catch {
+    content.textContent = "(could not fetch logs — native host offline)";
+    panel.classList.remove("hidden");
+    btn.textContent = "Hide logs";
+  }
+  btn.disabled = false;
 });
 
 init();

@@ -16,12 +16,26 @@ Protocol:
 import json
 import struct
 import sys
+import os
+import subprocess
 import urllib.request
 import urllib.error
 import threading
 import time
+import logging
+from logging.handlers import RotatingFileHandler
 
 DAEMON_URL = "http://127.0.0.1:9111"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_PATH = os.path.join(SCRIPT_DIR, "native_host.log")
+
+# --- Logging setup ---
+
+log = logging.getLogger("snatch_native")
+log.setLevel(logging.DEBUG)
+_handler = RotatingFileHandler(LOG_PATH, maxBytes=512 * 1024, backupCount=2)
+_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"))
+log.addHandler(_handler)
 
 # --- stdio helpers (Chrome Native Messaging protocol) ---
 
@@ -122,9 +136,81 @@ def poll_queue(interval=2.0):
             pass  # Silently skip poll errors
 
 
+# --- Companion app discovery & launch (WSL2 <-> Windows) ---
+
+def _find_companion_exe():
+    """Find Snatch.exe in %LOCALAPPDATA% (Windows side)."""
+    try:
+        r = subprocess.run(
+            ["cmd.exe", "/c", "echo", "%LOCALAPPDATA%"],
+            capture_output=True, text=True, timeout=5,
+        )
+        localappdata = r.stdout.strip().replace("\r", "")
+        if not localappdata or "%" in localappdata:
+            log.warning("Could not resolve %%LOCALAPPDATA%%: %r", localappdata)
+            return None
+        win_path = f"{localappdata}\\Snatch\\Snatch.exe"
+        # Convert to WSL path to check existence
+        r2 = subprocess.run(
+            ["wslpath", "-u", win_path],
+            capture_output=True, text=True, timeout=5,
+        )
+        wsl_path = r2.stdout.strip()
+        exists = os.path.isfile(wsl_path)
+        log.info("Companion exe: %s (wsl: %s, exists: %s)", win_path, wsl_path, exists)
+        if exists:
+            return win_path
+    except Exception as e:
+        log.error("_find_companion_exe failed: %s", e)
+    return None
+
+
+def handle_launch_companion():
+    """Find and launch the Snatch companion app."""
+    log.info("launch_companion requested")
+    exe = _find_companion_exe()
+    if not exe:
+        log.error("launch_companion: Snatch.exe not found")
+        return {"ok": False, "error": "Snatch.exe not found"}
+    try:
+        log.info("Launching: cmd.exe /c start \"\" \"%s\"", exe)
+        subprocess.Popen(
+            ["cmd.exe", "/c", "start", "", exe],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        log.info("launch_companion: started successfully")
+        return {"ok": True, "data": {"launched": True, "path": exe}}
+    except Exception as e:
+        log.error("launch_companion failed: %s", e)
+        return {"ok": False, "error": str(e)[:200]}
+
+
+def handle_check_installed():
+    """Check if the companion app is installed."""
+    exe = _find_companion_exe()
+    return {"ok": True, "data": {"installed": exe is not None, "path": exe}}
+
+
+def handle_get_logs(data):
+    """Return last N lines of the native host log."""
+    lines = (data or {}).get("lines", 100)
+    try:
+        with open(LOG_PATH, "r") as f:
+            all_lines = f.readlines()
+        tail = all_lines[-lines:]
+        return {"ok": True, "data": {"lines": [l.rstrip() for l in tail], "path": LOG_PATH}}
+    except FileNotFoundError:
+        return {"ok": True, "data": {"lines": [], "path": LOG_PATH}}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+
+
 # --- Main loop ---
 
 def main():
+    log.info("=== Native host started (pid %d) ===", os.getpid())
+
     # Start queue polling in background thread
     poller = threading.Thread(target=poll_queue, daemon=True)
     poller.start()
@@ -132,15 +218,34 @@ def main():
     while True:
         msg = read_message()
         if msg is None:
+            log.info("stdin closed, exiting")
             break  # stdin closed = Chrome disconnected
 
         msg_id = msg.get("id")
         action = msg.get("action", "")
         data = msg.get("data")
 
-        result = proxy_to_daemon(action, data)
+        log.debug("action=%s id=%s", action, msg_id)
+
+        # Local actions (handled by native host, not proxied to daemon)
+        if action == "ping":
+            result = {"ok": True, "data": {"pong": True}}
+        elif action == "launch_companion":
+            result = handle_launch_companion()
+        elif action == "check_installed":
+            result = handle_check_installed()
+        elif action == "get_logs":
+            result = handle_get_logs(data)
+        else:
+            result = proxy_to_daemon(action, data)
+
+        if not result.get("ok"):
+            log.warning("action=%s error: %s", action, result.get("error", ""))
+
         result["id"] = msg_id
         send_message(result)
+
+    log.info("=== Native host exiting ===")
 
 
 if __name__ == "__main__":

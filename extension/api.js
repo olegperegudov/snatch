@@ -18,6 +18,7 @@ const SnatchAPI = (() => {
   let _pendingRequests = {};  // id -> {resolve, reject, timer}
   let _nextId = 1;
   let _onQueueUpdate = null;  // callback for push updates from native host
+  let _installState = null;   // "running" | "installed" | "not_installed" | null
 
   // --- Native Messaging ---
 
@@ -46,16 +47,18 @@ const SnatchAPI = (() => {
       });
 
       _port.onDisconnect.addListener(() => {
+        const lastErr = chrome.runtime.lastError;
+        const errMsg = lastErr ? lastErr.message : "native host disconnected";
         _port = null;
         // If we were in native mode, switch to http
         if (_mode === "native") {
           console.log("[Snatch] Native host disconnected, falling back to HTTP");
           _mode = "http";
         }
-        // Reject all pending requests
+        // Reject all pending requests with the actual Chrome error
         for (const id in _pendingRequests) {
           clearTimeout(_pendingRequests[id].timer);
-          _pendingRequests[id].reject(new Error("native host disconnected"));
+          _pendingRequests[id].reject(new Error(errMsg));
         }
         _pendingRequests = {};
       });
@@ -173,6 +176,53 @@ const SnatchAPI = (() => {
     return _sendHttp(method, path, data);
   }
 
+  // --- Install state detection ---
+
+  async function _detectInstallState() {
+    // Step 1: Quick HTTP health check (~100ms if connection refused, ~200ms if running)
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(`${HTTP_BASE}/health`, { signal: controller.signal });
+      clearTimeout(tid);
+      const data = await res.json();
+      if (data && data.status === "ok") {
+        _installState = "running";
+        if (!_mode) _mode = "http";
+        return { state: "running", mode: _mode, health: data };
+      }
+    } catch {}
+
+    // Step 2: HTTP failed → companion not running.
+    // Try native messaging "ping" to check if native host is registered (= installed).
+    // This requires WSL+Python startup (~2-3s) but only runs when daemon is offline.
+    try {
+      const port = _connectNative();
+      if (port) {
+        const result = await Promise.race([
+          _sendNative("ping"),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 4000)),
+        ]);
+        // ping succeeded → native host works → companion installed but not running
+        if (_port) { try { _port.disconnect(); } catch {} _port = null; }
+        _installState = "installed";
+        return { state: "installed", mode: null };
+      }
+    } catch (e) {
+      if (_port) { try { _port.disconnect(); } catch {} _port = null; }
+      const err = e.message || "";
+      // Native host existed but something else went wrong → still installed
+      if (!err.includes("not found") && !err.includes("not available")) {
+        _installState = "installed";
+        return { state: "installed", mode: null };
+      }
+    }
+
+    // Step 3: Neither HTTP nor native works
+    _installState = "not_installed";
+    return { state: "not_installed", mode: null };
+  }
+
   // --- Public API ---
 
   return {
@@ -181,6 +231,9 @@ const SnatchAPI = (() => {
 
     /** Get current mode without re-detecting */
     getMode() { return _mode; },
+
+    /** Get cached install state */
+    getInstallState() { return _installState; },
 
     /** Force a specific mode ("native" or "http") */
     setMode(mode) { _mode = mode; },
@@ -206,5 +259,14 @@ const SnatchAPI = (() => {
     stopQueue()           { return request("stop_queue"); },
     checkUpdate()         { return request("check_update"); },
     update()              { return request("do_update"); },
+
+    /** Detect install state: "running" | "installed" | "not_installed" */
+    detectInstallState()  { return _detectInstallState(); },
+
+    /** Launch companion app via native host bridge */
+    launchCompanion()     { return _sendNative("launch_companion"); },
+
+    /** Get native host logs (last N lines) */
+    getLogs(lines)        { return _sendNative("get_logs", { lines: lines || 100 }); },
   };
 })();
