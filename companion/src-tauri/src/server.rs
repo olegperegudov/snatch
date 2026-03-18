@@ -1,6 +1,8 @@
 use axum::{
     Router,
-    extract::{Path as AxumPath, State},
+    extract::{Path as AxumPath, State, Request},
+    middleware::Next,
+    response::Response,
     routing::{delete, get, post, put},
     Json,
 };
@@ -9,16 +11,25 @@ use http::HeaderValue;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::Mutex;
 
 use crate::db::Db;
 use crate::downloader;
 use crate::queue::{DownloadQueue, Status};
 
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
+
 pub struct AppState {
     pub queue: DownloadQueue,
     pub db: Arc<Db>,
     pub settings: Mutex<Settings>,
+    pub last_request: Arc<AtomicU64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,7 +91,37 @@ pub fn db_path() -> std::path::PathBuf {
     dir.join("snatch.db")
 }
 
+async fn track_activity(
+    State(state): State<Arc<AppState>>,
+    req: Request,
+    next: Next,
+) -> Response {
+    state.last_request.store(now_secs(), Ordering::Relaxed);
+    next.run(req).await
+}
+
 pub async fn start_server(state: Arc<AppState>) {
+    // Idle shutdown: exit after 10 min with no requests and no active downloads
+    let idle_state = state.clone();
+    tokio::spawn(async move {
+        const IDLE_TIMEOUT: u64 = 600; // 10 minutes
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            let last = idle_state.last_request.load(Ordering::Relaxed);
+            let elapsed = now_secs().saturating_sub(last);
+            if elapsed > IDLE_TIMEOUT {
+                let items = idle_state.queue.items.lock().await;
+                let has_active = items.values().any(|i|
+                    i.status == Status::Downloading || i.status == Status::Pending
+                );
+                if !has_active {
+                    eprintln!("[Snatch] Idle timeout ({IDLE_TIMEOUT}s), shutting down");
+                    std::process::exit(0);
+                }
+            }
+        }
+    });
+
     let app = Router::new()
         .route("/health", get(health))
         .route("/queue", get(get_queue))
@@ -98,6 +139,8 @@ pub async fn start_server(state: Arc<AppState>) {
         .route("/history/check", post(check_history))
         .route("/check-update", get(check_update))
         .route("/update", post(do_update))
+        .route("/shutdown", post(shutdown_server))
+        .layer(axum::middleware::from_fn_with_state(state.clone(), track_activity))
         .layer(
             CorsLayer::new()
                 .allow_origin(AllowOrigin::predicate(|origin: &HeaderValue, _| {
@@ -117,6 +160,14 @@ pub async fn start_server(state: Arc<AppState>) {
 
 async fn health() -> Json<Value> {
     Json(json!({"status": "ok", "version": env!("CARGO_PKG_VERSION")}))
+}
+
+async fn shutdown_server() -> Json<Value> {
+    tokio::spawn(async {
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        std::process::exit(0);
+    });
+    Json(json!({"ok": true}))
 }
 
 async fn get_queue(State(state): State<Arc<AppState>>) -> Json<Value> {

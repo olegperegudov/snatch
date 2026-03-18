@@ -79,6 +79,7 @@ ROUTES = {
     "pause":        ("POST",   "/pause"),
     "start_queue":  ("POST",   "/start_queue"),
     "stop_queue":   ("POST",   "/stop_queue"),
+    "shutdown":     ("POST",   "/shutdown"),
 }
 
 

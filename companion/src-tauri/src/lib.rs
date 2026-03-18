@@ -5,6 +5,7 @@ mod server;
 
 use server::{AppState, Settings, db_path, settings_path, start_server};
 use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 
@@ -18,10 +19,13 @@ pub fn run() {
     let max_concurrent = settings.max_concurrent;
 
     // Build shared state
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
     let state = Arc::new(AppState {
         queue: queue::DownloadQueue::new(max_concurrent),
         db: db.clone(),
         settings: tokio::sync::Mutex::new(settings),
+        last_request: Arc::new(AtomicU64::new(now)),
     });
 
     // Load interrupted downloads from DB into queue

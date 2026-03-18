@@ -129,70 +129,37 @@ header {
   background: var(--ok);
 }
 
-/* --- Settings button --- */
+/* --- Settings button (= status indicator) --- */
 #settings-btn {
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: var(--fail);
   cursor: pointer;
   padding: 2px;
   display: flex;
-  transition: color 0.2s;
+  transition: color 0.3s;
 }
-#settings-btn:hover { color: var(--text-dim); }
-#settings-btn.update-available {
+#settings-btn:hover { opacity: 0.8; }
+#settings-btn.online { color: var(--ok); }
+#settings-btn.starting {
   color: var(--ok);
-  animation: update-pulse 2s ease-in-out infinite;
+  animation: gear-blink 0.8s ease-in-out infinite;
 }
-@keyframes update-pulse {
-  0%, 100% { color: var(--ok); }
-  50% { color: var(--ok-glow); }
-}
-
-/* --- Status dot --- */
-.dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.dot.online {
-  background: var(--ok);
-  box-shadow: 0 0 6px var(--ok-glow);
-}
-.dot.offline {
-  background: var(--fail);
-  box-shadow: 0 0 6px var(--fail-border);
-}
-.dot.installed {
-  background: var(--warn);
-  box-shadow: 0 0 6px var(--warn-border);
+#settings-btn.update-available { color: var(--warn); }
+@keyframes gear-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
 }
 
-/* --- Companion banner --- */
-.banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* --- Starting message (shows below header) --- */
+.starting-msg {
+  text-align: center;
   padding: 6px 12px;
-  background: var(--warn-bg);
-  border-bottom: 1px solid var(--warn-border);
   font-size: 10px;
-  color: var(--warn);
+  color: var(--text-muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
-.banner-btn {
-  color: var(--warn);
-  border: 1px solid var(--warn-border);
-  border-radius: 4px;
-  padding: 2px 10px;
-  font: 500 10px var(--font);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-.banner-btn:hover { background: var(--warn-border); }
-button.banner-btn { background: transparent; }
-button.banner-btn:disabled { opacity: 0.5; cursor: wait; }
 
 /* --- Panels & sections --- */
 .panel { padding: 0; }
@@ -443,43 +410,57 @@ button.banner-btn:disabled { opacity: 0.5; cursor: wait; }
   padding: 10px 12px 14px;
 }
 
-/* --- Update row --- */
-.update-row {
+/* --- Companion section (top of settings) --- */
+.companion-section {
   margin-bottom: 12px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
-
-.version-label {
-  color: var(--text-muted);
+.companion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.companion-status {
+  color: var(--text-dim);
   font: 500 11px var(--font);
+}
+.companion-status a {
+  color: var(--text-muted);
   text-decoration: none;
-  cursor: pointer;
   transition: color 0.2s;
 }
-.version-label:hover { color: var(--text-dim); }
-
-.check-update-btn {
-  background: none;
+.companion-status a:hover { color: var(--text-dim); }
+.companion-update {
+  font: 400 10px var(--font);
   color: var(--text-muted);
+}
+.companion-update.available { color: var(--warn); cursor: pointer; }
+.companion-actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.companion-btn {
+  flex: 1;
+  padding: 5px;
+  text-align: center;
+  font: 400 10px var(--font);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 3px 10px;
-  font: 400 10px var(--font);
+  color: var(--text-dim);
+  text-decoration: none;
   cursor: pointer;
+  background: none;
   transition: all 0.2s;
 }
-.check-update-btn:hover { color: var(--text-dim); border-color: var(--text-muted); }
-.check-update-btn:disabled { opacity: 0.5; cursor: wait; }
-.check-update-btn.updating {
-  color: var(--ok);
-  border-color: var(--ok-border);
-  animation: pulse-update 1.5s ease-in-out infinite;
-}
-@keyframes pulse-update {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+.companion-btn:hover { color: var(--text); border-color: var(--text-muted); }
+.companion-btn:disabled { opacity: 0.5; cursor: wait; }
+.companion-btn.ok { color: var(--ok); border-color: var(--ok-border); }
+.companion-btn.ok:hover { background: var(--ok-bg); }
+.companion-btn.danger { color: var(--fail); border-color: var(--fail-border); }
+.companion-btn.danger:hover { background: var(--fail-bg); }
 
 .settings-body label:not(.toggle) {
   display: block;

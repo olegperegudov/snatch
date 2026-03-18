@@ -150,6 +150,7 @@ const SnatchAPI = (() => {
     stop_queue:   ["POST",   "/stop_queue"],
     check_update: ["GET",    "/check-update"],
     do_update:    ["POST",   "/update"],
+    shutdown:     ["POST",   "/shutdown"],
   };
 
   async function request(action, data) {
@@ -179,6 +180,7 @@ const SnatchAPI = (() => {
   // --- Install state detection ---
 
   async function _detectInstallState() {
+    _mode = null; // Fresh detection each time
     // Step 1: Quick HTTP health check (~100ms if connection refused, ~200ms if running)
     try {
       const controller = new AbortController();
@@ -259,6 +261,7 @@ const SnatchAPI = (() => {
     stopQueue()           { return request("stop_queue"); },
     checkUpdate()         { return request("check_update"); },
     update()              { return request("do_update"); },
+    shutdown()            { return request("shutdown"); },
 
     /** Detect install state: "running" | "installed" | "not_installed" */
     detectInstallState()  { return _detectInstallState(); },

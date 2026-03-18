@@ -148,11 +148,18 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   try {
     await SnatchAPI.download({ url, page_url: tab.url, title });
     updateDownloadBadge();
-  } catch (e) {
-    // briefly show error, then resume normal badge
-    chrome.action.setBadgeBackgroundColor({ color: "#f44336" });
-    chrome.action.setBadgeText({ text: "!" });
-    setTimeout(updateDownloadBadge, 2000);
+  } catch {
+    // Companion might be offline — try auto-launch and retry
+    try {
+      await SnatchAPI.launchCompanion();
+      await new Promise((r) => setTimeout(r, 3000));
+      await SnatchAPI.download({ url, page_url: tab.url, title });
+      updateDownloadBadge();
+    } catch {
+      chrome.action.setBadgeBackgroundColor({ color: "#f44336" });
+      chrome.action.setBadgeText({ text: "!" });
+      setTimeout(updateDownloadBadge, 2000);
+    }
   }
 });
 
@@ -242,49 +249,6 @@ async function updateDownloadBadge() {
   }
 }
 
-// --- Icon color based on daemon status ---
-let _daemonOnline = false;
-
-async function tintIcon(online) {
-  if (online === _daemonOnline) return;
-  _daemonOnline = online;
-
-  const imageData = {};
-  for (const size of [16, 48, 128]) {
-    const resp = await fetch(`icons/icon${size}.png`);
-    const bitmap = await createImageBitmap(await resp.blob());
-    const canvas = new OffscreenCanvas(size, size);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(bitmap, 0, 0);
-    const img = ctx.getImageData(0, 0, size, size);
-
-    if (!online) {
-      const d = img.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i], g = d[i + 1], b = d[i + 2];
-        // Shift green pixels → amber/yellow
-        if (g > r * 1.2 && g > b * 1.5) {
-          d[i]     = Math.min(255, Math.floor(g * 1.45)); // R up
-          d[i + 1] = Math.floor(g * 0.78);                // G down
-          d[i + 2] = Math.floor(b * 0.15);                // B ~0
-        }
-      }
-    }
-    imageData[size] = img;
-  }
-  chrome.action.setIcon({ imageData });
-}
-
-async function checkDaemonHealth() {
-  try {
-    await SnatchAPI.health();
-    tintIcon(true);
-  } catch {
-    tintIcon(false);
-  }
-}
-
-// Poll every 2 seconds (HTTP mode fallback; native mode uses push updates)
-setInterval(() => { updateDownloadBadge(); checkDaemonHealth(); }, 2000);
+// Poll badge every 2 seconds
+setInterval(updateDownloadBadge, 2000);
 updateDownloadBadge();
-checkDaemonHealth();

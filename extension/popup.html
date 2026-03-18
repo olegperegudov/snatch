@@ -13,19 +13,14 @@
       <button class="tab" data-tab="completed">Completed</button>
     </nav>
     <div class="header-right">
-      <span id="status-dot" class="dot offline" title="Daemon offline"></span>
-      <button id="settings-btn" title="Settings">
+      <button id="settings-btn" title="Companion offline">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       </button>
     </div>
   </header>
 
-  <!-- Companion banner -->
-  <div id="companion-banner" class="banner hidden">
-    <span id="banner-text">Companion app not found</span>
-    <button id="banner-launch" class="banner-btn hidden">Launch</button>
-    <a id="banner-download" class="banner-btn hidden" target="_blank">Download</a>
-  </div>
+  <!-- Starting message (shown during auto-start) -->
+  <div id="starting-msg" class="starting-msg hidden">Starting server, one moment...</div>
 
   <!-- Downloads -->
   <div id="tab-downloads" class="panel">
@@ -51,10 +46,25 @@
   <!-- Settings -->
   <div id="settings" class="panel hidden">
     <div class="settings-body">
-      <div class="setting-row update-row">
-        <a id="version-link" class="version-label" target="_blank"></a>
-        <button id="check-update-btn" class="check-update-btn">check update</button>
+      <!-- Companion section -->
+      <div class="companion-section">
+        <div class="companion-header">
+          <span id="companion-status" class="companion-status">Companion</span>
+          <span id="companion-update" class="companion-update"></span>
+        </div>
+        <div class="companion-actions">
+          <a id="download-btn" class="companion-btn" href="https://github.com/olegperegudov/snatch/releases/latest" target="_blank">Download</a>
+          <button id="launch-stop-btn" class="companion-btn ok">Launch</button>
+        </div>
+        <div class="setting-row">
+          <span>Auto-start companion</span>
+          <label class="toggle">
+            <input type="checkbox" id="auto-start" checked>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
       </div>
+
       <div class="setting-row">
         <span>Auto-download</span>
         <label class="toggle">

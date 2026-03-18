@@ -1,9 +1,9 @@
 const GITHUB_REPO = "olegperegudov/snatch";
 const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
-const MIN_COMPANION = "0.1.0";
 
 let currentTab = null;
 let autoDl = true;
+let autoStart = true;
 let currentSettings = {};
 let _allCompleted = [];
 
@@ -16,10 +16,12 @@ function esc(s) {
   return d.innerHTML;
 }
 
-// --- Auto-download toggle ---
-chrome.storage.local.get("autoDl", (data) => {
+// --- Storage: load toggles ---
+chrome.storage.local.get(["autoDl", "autoStart"], (data) => {
   autoDl = data.autoDl !== false;
+  autoStart = data.autoStart !== false; // default ON
   $("auto-dl").checked = autoDl;
+  $("auto-start").checked = autoStart;
 });
 
 $("auto-dl").addEventListener("change", async (e) => {
@@ -27,6 +29,11 @@ $("auto-dl").addEventListener("change", async (e) => {
   chrome.storage.local.set({ autoDl });
   autoDl ? await SnatchAPI.startQueue() : await SnatchAPI.stopQueue();
   loadQueue();
+});
+
+$("auto-start").addEventListener("change", (e) => {
+  autoStart = e.target.checked;
+  chrome.storage.local.set({ autoStart });
 });
 
 // --- Tab switching ---
@@ -45,12 +52,10 @@ $("settings-btn").addEventListener("click", () => {
   const s = $("settings");
   const isHidden = s.classList.contains("hidden");
   if (isHidden) {
-    // Hide all panels, show settings
     $$(".panel").forEach((p) => p.classList.add("hidden"));
     s.classList.remove("hidden");
     loadSettings();
   } else {
-    // Hide settings, restore active tab panel
     s.classList.add("hidden");
     const activeTab = document.querySelector(".tab.active");
     if (activeTab) $(`tab-${activeTab.dataset.tab}`).classList.remove("hidden");
@@ -82,7 +87,6 @@ async function loadDetected() {
   const spinSvg = `<svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 11-6.2-8.6"/></svg>`;
   const title = currentTab.title || "";
 
-  // Single "probing" row
   list.innerHTML = `
     <div class="detected-item">
       <div class="detected-info">
@@ -92,7 +96,6 @@ async function loadDetected() {
     </div>
   `;
 
-  // Probe all in parallel, dedupe by resolution
   const variants = [];
   const results = await Promise.allSettled(videos.map((v) => SnatchAPI.probe({ url: v.url })));
   results.forEach((r, i) => {
@@ -106,8 +109,7 @@ async function loadDetected() {
   });
   variants.sort((a, b) => (b.height || 0) - (a.height || 0));
 
-  // Pick best match: exact resolution or next best (fallback = yellow)
-  let picked = variants[0]; // default: best available
+  let picked = variants[0];
   let fallback = false;
   if (currentSettings.filter_resolution && currentSettings.preferred_resolution !== "best") {
     const h = parseInt(currentSettings.preferred_resolution);
@@ -116,7 +118,6 @@ async function loadDetected() {
       if (exact) {
         picked = exact;
       } else {
-        // Next lower resolution
         const lower = variants.filter((v) => v.height < h).sort((a, b) => b.height - a.height);
         picked = lower[0] || variants[0];
         fallback = true;
@@ -235,7 +236,7 @@ async function loadCompleted() {
   catch { _allCompleted = []; offline = true; }
   const empty = $("completed-empty");
   if (offline) {
-    empty.textContent = "Daemon offline — start it to see downloads";
+    empty.textContent = "Companion offline";
     empty.style.display = "";
     $("completed-list").innerHTML = "";
     return;
@@ -279,7 +280,6 @@ async function loadSettings() {
   } catch {}
 }
 
-// Enter key saves settings from any input field
 $("settings").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.matches("input")) {
     e.preventDefault();
@@ -342,173 +342,175 @@ async function renderDirHistory() {
 const dirInput = $("s-download-dir");
 dirInput.addEventListener("focus", renderDirHistory);
 dirInput.addEventListener("click", renderDirHistory);
-dirInput.addEventListener("blur", () => {
-});
+dirInput.addEventListener("blur", () => {});
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".dir-wrapper")) $("dir-history").classList.add("hidden");
 });
 
-// --- Daemon health + companion banner ---
-function showBanner(text, { action } = {}) {
-  const banner = $("companion-banner");
-  const launchBtn = $("banner-launch");
-  const downloadBtn = $("banner-download");
-  $("banner-text").textContent = text;
-
-  launchBtn.classList.add("hidden");
-  downloadBtn.classList.add("hidden");
-
-  if (action === "launch") {
-    launchBtn.classList.remove("hidden");
-  } else if (action === "download") {
-    downloadBtn.href = RELEASES_URL;
-    downloadBtn.classList.remove("hidden");
-  }
-  banner.classList.remove("hidden");
+// --- Gear icon state helpers ---
+function setGear(state, title) {
+  const gear = $("settings-btn");
+  gear.className = state || ""; // "", "online", "starting", "update-available"
+  gear.title = title || "";
 }
 
-function hideBanner() {
-  $("companion-banner").classList.add("hidden");
-}
-
-// --- Launch companion button ---
-$("banner-launch").addEventListener("click", async () => {
-  const btn = $("banner-launch");
-  btn.textContent = "Launching...";
-  btn.disabled = true;
-  try {
-    await SnatchAPI.launchCompanion();
-    // Poll until daemon comes online (max ~15s)
-    let attempts = 0;
-    const poll = setInterval(async () => {
-      attempts++;
-      try {
-        const res = await SnatchAPI.health();
-        if (res && res.status === "ok") {
-          clearInterval(poll);
-          btn.textContent = "Launch";
-          btn.disabled = false;
-          checkDaemon();
-        }
-      } catch {
-        if (attempts > 7) {
-          clearInterval(poll);
-          btn.textContent = "Launch";
-          btn.disabled = false;
-          $("banner-text").textContent = "Companion didn't start — try manually";
-        }
+// --- Poll until companion comes online ---
+async function pollUntilOnline(maxAttempts = 8, intervalMs = 2000) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    try {
+      const res = await SnatchAPI.health();
+      if (res?.status === "ok") {
+        setGear("online", "Companion online");
+        $("starting-msg").classList.add("hidden");
+        updateCompanionSection({ state: "running", health: res });
+        silentUpdateCheck();
+        return true;
       }
-    }, 2000);
-  } catch {
-    btn.textContent = "Launch";
-    btn.disabled = false;
-    $("banner-text").textContent = "Could not launch — try manually";
+    } catch {}
   }
-});
-
-function versionCompare(a, b) {
-  const pa = a.split(".").map(Number), pb = b.split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    if ((pa[i] || 0) < (pb[i] || 0)) return -1;
-    if ((pa[i] || 0) > (pb[i] || 0)) return 1;
-  }
-  return 0;
+  return false;
 }
 
+// --- Main daemon check (runs once on popup open) ---
 async function checkDaemon() {
-  const dot = $("status-dot");
   const result = await SnatchAPI.detectInstallState();
 
   if (result.state === "running") {
-    const health = result.health || {};
-    dot.className = "dot online";
-    dot.title = result.mode === "native" ? "Connected (native)" : "Daemon online";
-    const ver = health.version || "?";
-    const versionLink = $("version-link");
-    versionLink.textContent = `v${ver}`;
-    versionLink.href = `https://github.com/${GITHUB_REPO}/releases/tag/v${ver}`;
-    if (versionCompare(ver, MIN_COMPANION) < 0) {
-      showBanner(`Companion outdated (${ver})`, { action: "download" });
-    } else {
-      hideBanner();
-      silentUpdateCheck();
+    setGear("online", "Companion online");
+    updateCompanionSection(result);
+    silentUpdateCheck();
+    return;
+  }
+
+  if (result.state === "installed" && autoStart) {
+    // Auto-start: blink green, show message, launch
+    setGear("starting", "Starting companion...");
+    $("starting-msg").classList.remove("hidden");
+    try {
+      await SnatchAPI.launchCompanion();
+      const ok = await pollUntilOnline();
+      if (!ok) {
+        setGear("", "Companion offline");
+        $("starting-msg").textContent = "Could not start — open settings";
+        updateCompanionSection(result);
+      }
+    } catch {
+      setGear("", "Companion offline");
+      $("starting-msg").textContent = "Could not start — open settings";
+      updateCompanionSection(result);
     }
+    return;
+  }
+
+  // Installed but auto-start off, or not installed
+  setGear("", result.state === "installed" ? "Companion not running" : "Companion not installed");
+  updateCompanionSection(result);
+}
+
+// --- Update companion section in settings ---
+function updateCompanionSection(result) {
+  const statusEl = $("companion-status");
+  const updateEl = $("companion-update");
+  const launchStopBtn = $("launch-stop-btn");
+
+  if (result.state === "running") {
+    const ver = result.health?.version || "?";
+    statusEl.innerHTML = `Companion <a href="https://github.com/${GITHUB_REPO}/releases/tag/v${ver}" target="_blank">v${ver}</a>`;
+    launchStopBtn.textContent = "Stop";
+    launchStopBtn.className = "companion-btn danger";
+    launchStopBtn.disabled = false;
   } else if (result.state === "installed") {
-    dot.className = "dot installed";
-    dot.title = "Companion installed but not running";
-    $("version-link").textContent = "not running";
-    $("version-link").removeAttribute("href");
-    showBanner("Companion installed but not running", { action: "launch" });
+    statusEl.textContent = "Companion not running";
+    updateEl.textContent = "";
+    launchStopBtn.textContent = "Launch";
+    launchStopBtn.className = "companion-btn ok";
+    launchStopBtn.disabled = false;
   } else {
-    dot.className = "dot offline";
-    dot.title = "Companion not installed";
-    $("version-link").textContent = "not installed";
-    $("version-link").removeAttribute("href");
-    showBanner("Companion app not installed", { action: "download" });
+    statusEl.textContent = "Companion not installed";
+    updateEl.textContent = "";
+    launchStopBtn.textContent = "Launch";
+    launchStopBtn.className = "companion-btn ok";
+    launchStopBtn.disabled = true;
   }
 }
 
-// --- Silent update check (auto on startup) ---
+// --- Launch / Stop button ---
+$("launch-stop-btn").addEventListener("click", async () => {
+  const btn = $("launch-stop-btn");
+  if (btn.textContent === "Stop") {
+    btn.disabled = true;
+    btn.textContent = "Stopping...";
+    try { await SnatchAPI.shutdown(); } catch {}
+    await new Promise((r) => setTimeout(r, 500));
+    setGear("", "Companion offline");
+    updateCompanionSection({ state: "installed" });
+    btn.disabled = false;
+  } else {
+    btn.disabled = true;
+    btn.textContent = "Starting...";
+    setGear("starting", "Starting companion...");
+    $("starting-msg").classList.remove("hidden");
+    try {
+      await SnatchAPI.launchCompanion();
+      const ok = await pollUntilOnline();
+      if (!ok) {
+        setGear("", "Companion offline");
+        $("starting-msg").textContent = "Could not start";
+        updateCompanionSection({ state: "installed" });
+      }
+    } catch {
+      setGear("", "Companion offline");
+      $("starting-msg").textContent = "Could not launch";
+      updateCompanionSection({ state: "installed" });
+    }
+    btn.disabled = false;
+  }
+});
+
+// --- Silent update check ---
 async function silentUpdateCheck() {
   try {
     const upd = await SnatchAPI.checkUpdate();
     if (upd?.update_available) {
-      $("check-update-btn").textContent = `update to v${upd.latest}`;
-      $("check-update-btn").classList.add("updating");
-      $("settings-btn").classList.add("update-available");
+      setGear("update-available", `Update available: v${upd.latest}`);
+      const updateEl = $("companion-update");
+      updateEl.textContent = `update to v${upd.latest}`;
+      updateEl.className = "companion-update available";
+      updateEl.onclick = doUpdate;
+    } else {
+      $("companion-update").textContent = "up to date";
     }
-  } catch { /* silent */ }
+  } catch {}
 }
 
-// --- Check update button ---
-$("check-update-btn").addEventListener("click", async () => {
-  const btn = $("check-update-btn");
-  btn.disabled = true;
-  btn.textContent = "checking...";
-  btn.classList.remove("updating");
-  $("settings-btn").classList.remove("update-available");
+async function doUpdate() {
+  const updateEl = $("companion-update");
+  updateEl.textContent = "updating...";
+  updateEl.onclick = null;
   try {
-    const upd = await SnatchAPI.checkUpdate();
-    if (upd?.update_available) {
-      btn.textContent = "updating...";
-      btn.classList.add("updating");
-      $("settings-btn").classList.add("update-available");
-      const res = await SnatchAPI.update();
-      if (res?.ok) {
-        btn.textContent = `installing v${res.version}...`;
-        // Companion exits — poll until it comes back
-        setTimeout(async function poll() {
-          try {
-            const h = await SnatchAPI.health();
-            btn.textContent = "check update";
-            btn.classList.remove("updating");
-            btn.disabled = false;
-            $("settings-btn").classList.remove("update-available");
-            $("version-link").textContent = `v${h.version}`;
-            $("version-link").href = `https://github.com/${GITHUB_REPO}/releases/tag/v${h.version}`;
-          } catch {
-            setTimeout(poll, 2000);
-          }
-        }, 3000);
-        return; // don't re-enable btn until poll finishes
-      } else {
-        btn.textContent = upd.error || "update failed";
-      }
-    } else if (upd?.error) {
-      btn.textContent = "error";
+    const res = await SnatchAPI.update();
+    if (res?.ok) {
+      updateEl.textContent = `installing v${res.version}...`;
+      // Companion restarts — poll until back
+      setTimeout(async function poll() {
+        try {
+          const h = await SnatchAPI.health();
+          setGear("online", "Companion online");
+          $("companion-update").textContent = "up to date";
+          $("companion-update").className = "companion-update";
+          updateCompanionSection({ state: "running", health: h });
+        } catch {
+          setTimeout(poll, 2000);
+        }
+      }, 3000);
     } else {
-      btn.textContent = "up to date";
+      updateEl.textContent = "update failed";
     }
   } catch {
-    btn.textContent = "offline";
+    updateEl.textContent = "update failed";
   }
-  btn.disabled = false;
-  setTimeout(() => {
-    btn.textContent = "check update";
-    btn.classList.remove("updating");
-    $("settings-btn").classList.remove("update-available");
-  }, 3000);
-});
+}
 
 // --- Logs viewer ---
 $("logs-btn").addEventListener("click", async () => {
