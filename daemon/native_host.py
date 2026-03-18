@@ -150,7 +150,7 @@ def _find_companion_exe():
         if not localappdata or "%" in localappdata:
             log.warning("Could not resolve %%LOCALAPPDATA%%: %r", localappdata)
             return None
-        win_path = f"{localappdata}\\Snatch\\Snatch.exe"
+        win_path = f"{localappdata}\\Snatch\\snatch-companion.exe"
         # Convert to WSL path to check existence
         r2 = subprocess.run(
             ["wslpath", "-u", win_path],
@@ -171,8 +171,8 @@ def handle_launch_companion():
     log.info("launch_companion requested")
     exe = _find_companion_exe()
     if not exe:
-        log.error("launch_companion: Snatch.exe not found")
-        return {"ok": False, "error": "Snatch.exe not found"}
+        log.error("launch_companion: snatch-companion.exe not found")
+        return {"ok": False, "error": "snatch-companion.exe not found"}
     try:
         log.info("Launching: cmd.exe /c start \"\" \"%s\"", exe)
         subprocess.Popen(
