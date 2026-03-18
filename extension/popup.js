@@ -492,18 +492,27 @@ async function doUpdate() {
     const res = await SnatchAPI.update();
     if (res?.ok) {
       updateEl.textContent = `installing v${res.version}...`;
-      // Companion restarts — poll until back
+      setGear("starting", "Updating companion...");
+      // Wait for installer to finish, then relaunch
+      let launched = false;
       setTimeout(async function poll() {
+        // Try health first (maybe installer auto-started it)
         try {
           const h = await SnatchAPI.health();
           setGear("online", "Companion online");
           $("companion-update").textContent = "up to date";
           $("companion-update").className = "companion-update";
           updateCompanionSection({ state: "running", health: h });
-        } catch {
-          setTimeout(poll, 2000);
+          return;
+        } catch {}
+        // Not running — try to launch via native host
+        if (!launched) {
+          launched = true;
+          try { await SnatchAPI.launchCompanion(); } catch {}
         }
-      }, 3000);
+        // Keep polling
+        setTimeout(poll, 2000);
+      }, 5000); // 5s wait for installer to finish
     } else {
       updateEl.textContent = "update failed";
     }
