@@ -144,6 +144,7 @@ const SnatchAPI = (() => {
     cancel:       ["DELETE", "/queue/"],  // + item id
     reveal_file:  ["POST",   "/reveal_file"],
     history_check:["POST",   "/history/check"],
+    search:       ["POST",   "/search"],
     retry:        ["POST",   "/retry"],
     pause:        ["POST",   "/pause"],
     start_queue:  ["POST",   "/start_queue"],
@@ -255,6 +256,7 @@ const SnatchAPI = (() => {
     cancel(id)            { return request("cancel", { id }); },
     revealFile(filename)  { return request("reveal_file", { filename }); },
     historyCheck(url)     { return request("history_check", { url }); },
+    search(query, limit)  { return request("search", { query, limit: limit || 100 }); },
     retry(id)             { return request("retry", { id }); },
     pause(id)             { return request("pause", { id }); },
     startQueue()          { return request("start_queue"); },

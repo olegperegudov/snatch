@@ -5,6 +5,7 @@ let currentTab = null;
 let autoDl = true;
 let autoStart = true;
 let currentSettings = {};
+let showDownloaded = false;
 let _allCompleted = [];
 
 const $ = (s) => document.getElementById(s);
@@ -17,11 +18,14 @@ function esc(s) {
 }
 
 // --- Storage: load toggles ---
-chrome.storage.local.get(["autoDl", "autoStart"], (data) => {
+chrome.storage.local.get(["autoDl", "autoStart", "showDownloaded"], (data) => {
   autoDl = data.autoDl !== false;
-  autoStart = data.autoStart !== false; // default ON
+  autoStart = data.autoStart !== false;
+  showDownloaded = data.showDownloaded === true; // default OFF
   $("auto-dl").checked = autoDl;
   $("auto-start").checked = autoStart;
+  $("show-downloaded").checked = showDownloaded;
+  updateCompletedVisibility();
 });
 
 $("auto-dl").addEventListener("change", async (e) => {
@@ -36,29 +40,49 @@ $("auto-start").addEventListener("change", (e) => {
   chrome.storage.local.set({ autoStart });
 });
 
-// --- Tab switching ---
-$$(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    $$(".tab").forEach((t) => t.classList.remove("active"));
-    $$(".panel").forEach((p) => p.classList.add("hidden"));
-    tab.classList.add("active");
-    $(`tab-${tab.dataset.tab}`).classList.remove("hidden");
-    $("settings").classList.add("hidden");
-  });
+$("show-downloaded").addEventListener("change", (e) => {
+  showDownloaded = e.target.checked;
+  chrome.storage.local.set({ showDownloaded });
+  updateCompletedVisibility();
 });
+
+// --- Search ---
+let _searchTimer = null;
+$("search-input").addEventListener("input", (e) => {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => {
+    const q = e.target.value.trim();
+    if (q.length >= 2) {
+      searchAll(q);
+    } else if (q.length === 0) {
+      loadCompleted();
+    }
+  }, 300);
+});
+
+async function searchAll(query) {
+  try {
+    const res = await SnatchAPI.search(query, 100);
+    _allCompleted = (res && res.items) || [];
+  } catch {
+    _allCompleted = [];
+  }
+  // When searching, always show results regardless of toggle
+  renderCompleted(_allCompleted, true);
+}
 
 // --- Settings toggle ---
 $("settings-btn").addEventListener("click", () => {
   const s = $("settings");
+  const main = $("main-panel");
   const isHidden = s.classList.contains("hidden");
   if (isHidden) {
-    $$(".panel").forEach((p) => p.classList.add("hidden"));
+    main.classList.add("hidden");
     s.classList.remove("hidden");
     loadSettings();
   } else {
     s.classList.add("hidden");
-    const activeTab = document.querySelector(".tab.active");
-    if (activeTab) $(`tab-${activeTab.dataset.tab}`).classList.remove("hidden");
+    main.classList.remove("hidden");
   }
 });
 
@@ -71,7 +95,7 @@ async function init() {
   loadCompleted();
   loadSettings();
   checkDaemon();
-  setInterval(() => { if (!document.hidden) { loadQueue(); loadCompleted(); } }, 2000);
+  setInterval(() => { if (!document.hidden) { loadQueue(); if (!$("search-input").value.trim()) loadCompleted(); } }, 2000);
 }
 
 // --- Detected ---
@@ -173,7 +197,7 @@ function renderQueue(items) {
   const list = $("queue-list"), empty = $("queue-empty");
   const active = items.filter((i) => i.status !== "done" && i.status !== "cancelled");
 
-  if (!active.length) { list.innerHTML = ""; empty.style.display = ""; return; }
+  if (!active.length) { list.innerHTML = ""; empty.style.display = "none"; return; }
   empty.style.display = "none";
 
   list.innerHTML = [...active].reverse().map((item) => {
@@ -223,34 +247,42 @@ function renderQueue(items) {
 // --- Completed ---
 $("open-folder-btn").addEventListener("click", () => SnatchAPI.revealFile(""));
 
-$("completed-search").addEventListener("input", (e) => {
-  const q = e.target.value.toLowerCase();
-  renderCompleted(q ? _allCompleted.filter((item) =>
-    `${item.title} ${item.filename} ${item.page_url}`.toLowerCase().includes(q)
-  ) : _allCompleted);
-});
-
 async function loadCompleted() {
-  let offline = false;
   try { _allCompleted = ((await SnatchAPI.completed()) || {}).items || []; }
-  catch { _allCompleted = []; offline = true; }
-  const empty = $("completed-empty");
-  if (offline) {
-    empty.textContent = "Companion offline";
-    empty.style.display = "";
-    $("completed-list").innerHTML = "";
-    return;
-  }
-  empty.textContent = "Empty";
-  const q = $("completed-search").value.toLowerCase();
-  renderCompleted(q ? _allCompleted.filter((item) =>
-    `${item.title} ${item.filename} ${item.page_url}`.toLowerCase().includes(q)
-  ) : _allCompleted);
+  catch { _allCompleted = []; }
+  renderCompleted(_allCompleted, false);
 }
 
-function renderCompleted(items) {
+function updateCompletedVisibility() {
+  const list = $("completed-list");
+  const empty = $("completed-empty");
+  const q = $("search-input").value.trim();
+  if (showDownloaded || q.length >= 2) {
+    list.style.display = "";
+    // Re-render
+    renderCompleted(_allCompleted, q.length >= 2);
+  } else {
+    list.style.display = "none";
+    empty.style.display = "none";
+  }
+}
+
+function renderCompleted(items, forceShow) {
   const list = $("completed-list"), empty = $("completed-empty");
-  if (!items.length) { list.innerHTML = ""; empty.style.display = ""; return; }
+
+  if (!showDownloaded && !forceShow) {
+    list.style.display = "none";
+    empty.style.display = "none";
+    return;
+  }
+  list.style.display = "";
+
+  if (!items.length) {
+    list.innerHTML = "";
+    empty.style.display = "";
+    empty.textContent = forceShow ? "No results" : "No downloads yet";
+    return;
+  }
   empty.style.display = "none";
 
   list.innerHTML = items.map((item) => {
@@ -350,7 +382,7 @@ document.addEventListener("click", (e) => {
 // --- Gear icon state helpers ---
 function setGear(state, title) {
   const gear = $("settings-btn");
-  gear.className = state || ""; // "", "online", "starting", "update-available"
+  gear.className = state || "";
   gear.title = title || "";
 }
 
@@ -384,7 +416,6 @@ async function checkDaemon() {
   }
 
   if (result.state === "installed" && autoStart) {
-    // Auto-start: blink green, show message, launch
     setGear("starting", "Starting companion...");
     $("starting-msg").classList.remove("hidden");
     try {
@@ -403,7 +434,6 @@ async function checkDaemon() {
     return;
   }
 
-  // Installed but auto-start off, or not installed
   setGear("", result.state === "installed" ? "Companion not running" : "Companion not installed");
   updateCompanionSection(result);
 }
@@ -490,7 +520,6 @@ async function doUpdate() {
   updateEl.onclick = null;
   setGear("starting", "Updating...");
 
-  // Step 1: Download + install (companion handles both, returns when done)
   statusEl.textContent = "Downloading update...";
   updateEl.textContent = "";
   let version = "?";
@@ -510,15 +539,12 @@ async function doUpdate() {
     return;
   }
 
-  // Step 2: Installer is running
   statusEl.textContent = `Installing v${version}...`;
   await new Promise((r) => setTimeout(r, 5000));
 
-  // Step 3: Launch companion
   statusEl.textContent = "Launching companion...";
   try { await SnatchAPI.launchCompanion(); } catch {}
 
-  // Step 4: Wait for it to come online
   statusEl.textContent = "Starting server...";
   for (let i = 0; i < 10; i++) {
     await new Promise((r) => setTimeout(r, 2000));
@@ -535,7 +561,6 @@ async function doUpdate() {
     } catch {}
   }
 
-  // Timeout
   statusEl.textContent = "Update installed but companion not starting";
   updateEl.textContent = "try Launch";
   setGear("", "Companion offline");

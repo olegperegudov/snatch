@@ -56,45 +56,52 @@ body {
 header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 8px 10px;
+  justify-content: space-between;
+  padding: 6px 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   border-radius: 10px 10px 0 0;
   position: sticky;
   top: 0;
   z-index: 10;
+  gap: 8px;
 }
 
-.tabs {
-  display: flex;
-  gap: 2px;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.header-left {
+  flex: 1;
+  min-width: 0;
 }
 
-.tab {
-  padding: 4px 12px;
-  font: 500 11px var(--font);
-  color: var(--text-dim);
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.tab:hover { color: var(--text); background: var(--surface-hover); }
-.tab.active {
-  color: var(--text);
+#search-input {
+  width: 100%;
+  padding: 4px 8px;
   background: var(--bg);
-  border-color: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font: 400 11px var(--font);
 }
+#search-input:focus { outline: none; border-color: var(--text-muted); }
+#search-input::placeholder { color: var(--text-muted); }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Mini toggle (for header) */
+.toggle.mini .toggle-track {
+  width: 20px;
+  height: 10px;
+}
+.toggle.mini .toggle-track::after {
+  width: 6px; height: 6px;
+  top: 2px; left: 2px;
+}
+.toggle.mini input:checked + .toggle-track::after {
+  transform: translateX(10px);
 }
 
 /* --- Toggle switch --- */
@@ -353,25 +360,6 @@ header {
 .q-item.error .q-info { color: var(--fail); }
 
 /* --- Completed --- */
-.search-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px 4px;
-}
-
-#completed-search {
-  flex: 1;
-  padding: 5px 8px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font: 400 11px var(--font);
-}
-#completed-search:focus { outline: none; border-color: var(--text-muted); }
-#completed-search::placeholder { color: var(--text-muted); }
-
 #open-folder-btn {
   background: none;
   border: 1px solid var(--border);

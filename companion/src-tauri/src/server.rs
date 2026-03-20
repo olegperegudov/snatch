@@ -137,6 +137,7 @@ pub async fn start_server(state: Arc<AppState>) {
         .route("/stop_queue", post(stop_queue))
         .route("/reveal_file", post(reveal_file))
         .route("/history/check", post(check_history))
+        .route("/search", post(search_downloads))
         .route("/check-update", get(check_update))
         .route("/update", post(do_update))
         .route("/shutdown", post(shutdown_server))
@@ -416,6 +417,23 @@ async fn reveal_file(
 struct HistoryCheckRequest {
     #[serde(default)]
     url: String,
+}
+
+#[derive(Deserialize)]
+struct SearchRequest {
+    #[serde(default)]
+    query: String,
+    #[serde(default = "default_search_limit")]
+    limit: i64,
+}
+fn default_search_limit() -> i64 { 100 }
+
+async fn search_downloads(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SearchRequest>,
+) -> Json<Value> {
+    let items = state.db.search(&req.query, req.limit);
+    Json(json!({"items": items}))
 }
 
 async fn check_history(

@@ -176,7 +176,18 @@ impl Db {
 
     pub fn recover_interrupted(&self) {
         let conn = self.conn.lock().unwrap();
-        conn.execute("UPDATE downloads SET status = 'paused' WHERE status = 'downloading'", []).ok();
+        conn.execute("UPDATE downloads SET status = 'paused' WHERE status IN ('downloading', 'pending')", []).ok();
+    }
+
+    pub fn search(&self, query: &str, limit: i64) -> Vec<DownloadRow> {
+        let conn = self.conn.lock().unwrap();
+        let pattern = format!("%{query}%");
+        let mut stmt = conn.prepare(
+            "SELECT * FROM downloads WHERE status = 'done'
+             AND (title LIKE ?1 OR filename LIKE ?1 OR page_url LIKE ?1 OR domain LIKE ?1)
+             ORDER BY completed_at DESC LIMIT ?2"
+        ).unwrap();
+        Self::query_rows(&mut stmt, params![pattern, limit])
     }
 
     pub fn delete(&self, id: &str) {
