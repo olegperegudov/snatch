@@ -8,6 +8,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
+use tauri::Manager;
 
 pub fn run() {
     eprintln!("[Snatch] Companion v{} starting", env!("CARGO_PKG_VERSION"));
@@ -58,21 +59,50 @@ pub fn run() {
     });
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            // Tray: right-click → "Stop Snatch"
+            // Tray menu
+            let show_i = MenuItem::with_id(app, "show", "Show Snatch", true, None::<&str>)?;
             let stop_i = MenuItem::with_id(app, "stop", "Stop Snatch", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&stop_i])?;
+            let menu = Menu::with_items(app, &[&show_i, &stop_i])?;
 
             let _tray = TrayIconBuilder::new()
                 .icon(tauri::include_image!("icons/icon.png"))
                 .menu(&menu)
                 .tooltip("Snatch — running on :9111")
                 .on_menu_event(|app, event| {
-                    if event.id().as_ref() == "stop" {
-                        app.exit(0);
+                    match event.id().as_ref() {
+                        "show" => {
+                            if let Some(win) = app.get_webview_window("main") {
+                                win.show().ok();
+                                win.set_focus().ok();
+                            }
+                        }
+                        "stop" => {
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click { .. } = event {
+                        if let Some(win) = tray.app_handle().get_webview_window("main") {
+                            if win.is_visible().unwrap_or(false) {
+                                win.hide().ok();
+                            } else {
+                                win.show().ok();
+                                win.set_focus().ok();
+                            }
+                        }
                     }
                 })
                 .build(app)?;
+
+            // Show window after setup
+            if let Some(win) = app.get_webview_window("main") {
+                win.show().ok();
+            }
 
             Ok(())
         })

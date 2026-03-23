@@ -1,4 +1,4 @@
-name: Release Snatch Companion
+name: Release Snatch
 
 on:
   push:
@@ -36,11 +36,33 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           projectPath: companion
           tauriScript: npx tauri
           tagName: ${{ github.ref_name }}
-          releaseName: "Snatch Companion ${{ github.ref_name }}"
-          releaseBody: "Download the installer below to install or update Snatch Companion."
+          releaseName: "Snatch ${{ github.ref_name }}"
+          releaseBody: "Download the installer below to install or update Snatch."
           releaseDraft: false
           prerelease: false
+          includeUpdaterJson: true
+
+  release-extension:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs: release-windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package mini extension
+        run: |
+          cd extension-mini
+          zip -r ../snatch-extension.zip . -x ".*"
+
+      - name: Upload extension to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.ref_name }} snatch-extension.zip --clobber

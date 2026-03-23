@@ -1,18 +1,40 @@
 {
-  "$schema": "https://raw.githubusercontent.com/nicedoc/tauri/dev/packages/cli/schema.json",
+  "$schema": "https://schema.tauri.app/config/2",
   "productName": "Snatch",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "identifier": "com.snatch.companion",
   "build": {
     "frontendDist": "../src"
   },
   "app": {
-    "withGlobalTauri": false,
-    "windows": []
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Snatch",
+        "width": 400,
+        "height": 450,
+        "resizable": true,
+        "center": true,
+        "decorations": false,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXkgQzZEOTUzNDNDRDM4MEYwNQpSV1FGRHpqTlExUFp4b1k3Y0xPN0cyQzJMOHV2Sk5GT3BHakdKbEp4Y0RJVEphdm55eXRteVkrQwo=",
+      "endpoints": [
+        "https://github.com/olegperegudov/snatch/releases/latest/download/latest.json"
+      ]
+    }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "createUpdaterArtifacts": "v1Compatible",
+    "targets": ["nsis", "dmg"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

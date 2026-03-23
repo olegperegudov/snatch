@@ -1,4 +1,90 @@
-<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Snatch</title></head>
-<body></body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snatch</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+  <body>
+    <main class="container" data-tauri-drag-region>
+      <div class="header" data-tauri-drag-region>
+        <div id="status-icon" data-tauri-drag-region>
+          <img src="raccoon.png" width="28" height="28" alt="Snatch" data-tauri-drag-region />
+        </div>
+        <div class="header-text" data-tauri-drag-region>
+          <div class="app-title" data-tauri-drag-region>snatch</div>
+          <div id="status-detail" data-tauri-drag-region>starting...</div>
+        </div>
+        <div class="header-right">
+          <button id="settings-btn" class="win-btn" title="Settings">&#x2699;</button>
+          <button id="win-min" class="win-btn" title="Minimize">&#x2212;</button>
+          <button id="win-close" class="win-btn win-close" title="Close">&#x2715;</button>
+        </div>
+      </div>
+
+      <!-- Queue (active downloads) -->
+      <div id="queue-panel">
+        <div id="queue-list"></div>
+        <div id="queue-empty" class="empty">no active downloads</div>
+      </div>
+
+      <hr class="section-divider" id="divider" style="display:none">
+
+      <!-- Completed (history) -->
+      <div id="completed-panel" style="display:none">
+        <div class="section-header">
+          <input type="text" id="search-input" placeholder="search history..." autocomplete="off">
+          <button id="open-folder-btn" title="Open download folder">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          </button>
+        </div>
+        <div id="completed-list"></div>
+        <div id="completed-empty" class="empty" style="display:none">no downloads yet</div>
+      </div>
+
+      <!-- Settings -->
+      <div id="settings-panel" style="display:none">
+        <div class="settings-content">
+          <div class="setting-row">
+            <span class="setting-label">resolution</span>
+            <select id="s-resolution">
+              <option value="best">best</option>
+              <option value="1080p">1080p</option>
+              <option value="720p">720p</option>
+              <option value="480p">480p</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">download folder</span>
+            <input type="text" id="s-download-dir" placeholder="~/Downloads">
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">max parallel</span>
+            <input type="number" id="s-max-concurrent" min="1" max="10" value="2">
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">skip downloaded</span>
+            <label class="toggle">
+              <input type="checkbox" id="s-skip-downloaded" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">filter by resolution</span>
+            <label class="toggle">
+              <input type="checkbox" id="s-filter-res">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <button id="s-save" class="btn-save">save</button>
+          <div class="setting-row version-row">
+            <span class="setting-label" id="version-label">v0.5.0</span>
+            <button id="update-btn" class="setting-btn">check update</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
 </html>

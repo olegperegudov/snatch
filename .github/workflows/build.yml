@@ -1,10 +1,11 @@
-name: Build Snatch Companion
+name: Build Snatch
 
 on:
   push:
     branches: [main]
     paths:
       - "companion/**"
+      - "extension-mini/**"
       - ".github/workflows/build.yml"
   workflow_dispatch:
 
@@ -37,6 +38,8 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           projectPath: companion
           tauriScript: npx tauri
@@ -44,5 +47,5 @@ jobs:
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: snatch-companion-windows
+          name: snatch-windows
           path: companion/src-tauri/target/release/bundle/nsis/*.exe

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 240px;
+      font-family: "JetBrains Mono", "SF Mono", monospace;
+      font-size: 11px;
+      background: #0a0a0c;
+      color: #e2e2e8;
+      padding: 14px 16px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      flex-shrink: 0;
+    }
+    .dot.ok { background: #22c55e; }
+    .dot.checking {
+      background: #eab308;
+      animation: pulse 0.8s ease-in-out infinite;
+    }
+    @keyframes pulse { 50% { opacity: 0.3; } }
+    .label { color: #6e6e7a; }
+    .label.ok { color: #22c55e; }
+    .install {
+      margin-top: 10px;
+      font-size: 10px;
+      color: #6e6e7a;
+      line-height: 1.5;
+    }
+    .install a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    .install a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <div id="dot" class="dot checking"></div>
+    <span id="label" class="label">checking...</span>
+  </div>
+  <div id="install" class="install" style="display:none">
+    Snatch companion app is needed to download videos.<br>
+    <a id="dl-link" href="#" target="_blank">Download from GitHub</a>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
