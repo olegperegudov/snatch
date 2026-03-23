@@ -25,7 +25,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXkgN0ZGMzgzNkU0QjVDRTEyRApSV1F0NFZ4TGJvUHpmemhKRXQ3Tkk0cTBRTUlQSEtWT3hoMTZaT09oTmFPWmFsRHkrNksrQnR5Qgo=",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc2MzZGNUVDQkE3NTE1RTQKUldUa0ZYVzY3UFUyZHVrb1hRcnE5OE5CTW5rTUhSd1lhdTBjZEcwTE9UWHBhbkluVHJ4N3dscDAK",
       "endpoints": [
         "https://github.com/olegperegudov/snatch/releases/latest/download/latest.json"
       ]
