@@ -65,6 +65,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const videos = tabVideos.get(msg.tabId) || [];
     sendResponse({ videos });
   }
+
+  // Download request from popup — runs in background, survives popup/tab close
+  if (msg.type === "download") {
+    SnatchAPI.download(msg.data)
+      .then((res) => sendResponse({ ok: true, data: res }))
+      .catch((e) => sendResponse({ ok: false, error: e.message || "failed" }));
+    return true; // async response
+  }
 });
 
 // --- Context menu: parent created once on install/update ---

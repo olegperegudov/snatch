@@ -233,8 +233,12 @@ function renderCompleted(items, forceShow) {
 
   if (!items.length) {
     list.innerHTML = "";
-    empty.style.display = "";
-    empty.textContent = $("search-input").value.trim() ? "no results" : "no downloads yet";
+    if (forceShow) {
+      empty.style.display = "";
+      empty.textContent = "no results";
+    } else {
+      empty.style.display = "none";
+    }
     return;
   }
   empty.style.display = "none";

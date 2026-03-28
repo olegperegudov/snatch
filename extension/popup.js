@@ -169,16 +169,24 @@ async function loadDetected() {
 
   async function doDownload(btn, v, force) {
     const row = btn.closest(".detected-actions");
+    // Delegate to background script so download survives popup/tab close
     try {
-      const res = await SnatchAPI.download({
-        url: v.url, page_url: currentTab.url,
-        title: `${currentTab.title} [${v.resolution}]`,
-        force, auto_start: autoDl,
+      const res = await chrome.runtime.sendMessage({
+        type: "download",
+        data: {
+          url: v.url, page_url: currentTab.url,
+          title: `${currentTab.title} [${v.resolution}]`,
+          force, auto_start: autoDl,
+        },
       });
-      row.innerHTML = res.reason === "already_downloaded"
-        ? '<span class="dl-status done">done</span>'
-        : '<span class="dl-status queued">queued</span>';
-      loadQueue();
+      if (res?.ok) {
+        row.innerHTML = res.data?.reason === "already_downloaded"
+          ? '<span class="dl-status done">done</span>'
+          : '<span class="dl-status queued">queued</span>';
+        loadQueue();
+      } else {
+        row.innerHTML = '<span class="dl-status error">error</span>';
+      }
     } catch {
       row.innerHTML = '<span class="dl-status error">error</span>';
     }

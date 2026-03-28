@@ -53,7 +53,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then((r) => r.json())
       .then((d) => sendResponse({ ok: true, version: d.version }))
       .catch(() => sendResponse({ ok: false }));
-    return true; // async response
+    return true;
+  }
+
+  // Download request — runs in background, survives popup/tab close
+  if (msg.type === "download") {
+    fetch(`${API}/download`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(msg.data),
+    })
+      .then((r) => r.json())
+      .then((d) => sendResponse({ ok: true, data: d }))
+      .catch(() => sendResponse({ ok: false }));
+    return true;
   }
 });
 
