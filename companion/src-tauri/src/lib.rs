@@ -96,7 +96,9 @@ pub fn run() {
                     }
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let tauri::tray::TrayIconEvent::Click { .. } = event {
+                    use tauri::tray::{TrayIconEvent, MouseButton, MouseButtonState};
+                    // Only toggle on left-click release to avoid rapid show/hide flicker
+                    if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
                         if let Some(win) = tray.app_handle().get_webview_window("main") {
                             if win.is_visible().unwrap_or(false) {
                                 win.hide().ok();

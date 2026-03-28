@@ -69,28 +69,51 @@ async function init() {
 
 // --- Health ---
 async function checkHealth() {
-  const detail = $("status-detail");
   try {
     const d = await api("GET", "/health");
     if (d?.status === "ok") {
-      serverReady = true;
-      detail.textContent = `listening on :9111`;
-      detail.className = "";
-      $("version-label").textContent = `v${d.version || "?"}`;
-      // Load data if this is recovery from a failed state
-      if (!$("queue-list").innerHTML) {
+      if (!serverReady) {
+        serverReady = true;
         loadSettings();
         loadQueue();
         loadCompleted();
       }
+      $("version-label").textContent = `v${d.version || "?"}`;
+      updateStatus();
       return true;
     }
   } catch {
-    serverReady = false;
-    detail.textContent = "server starting\u2026";
-    detail.className = "error";
+    // Only mark as not ready if we never connected
+    if (!serverReady) {
+      updateStatus();
+    }
   }
   return false;
+}
+
+// Single place that controls status text
+function updateStatus(downloading, active) {
+  const detail = $("status-detail");
+  const icon = $("status-icon");
+  if (!serverReady) {
+    detail.textContent = "server starting\u2026";
+    detail.className = "error";
+    icon.className = "";
+    return;
+  }
+  if (downloading > 0) {
+    icon.className = "downloading";
+    detail.textContent = `downloading ${downloading}/${active}`;
+    detail.className = "";
+  } else if (active > 0) {
+    icon.className = "";
+    detail.textContent = `${active} queued`;
+    detail.className = "";
+  } else {
+    icon.className = "";
+    detail.textContent = "ready";
+    detail.className = "";
+  }
 }
 
 // --- Queue ---
@@ -106,24 +129,11 @@ async function loadQueue() {
 function renderQueue(items) {
   const list = $("queue-list");
   const empty = $("queue-empty");
-  const icon = $("status-icon");
-  const detail = $("status-detail");
 
   const active = items.filter((i) => i.status !== "done" && i.status !== "cancelled");
   const downloading = items.filter((i) => i.status === "downloading");
 
-  // Update icon animation
-  if (downloading.length > 0) {
-    icon.className = "downloading";
-    detail.textContent = `downloading ${downloading.length}/${active.length}`;
-    detail.className = "";
-  } else if (active.length > 0) {
-    icon.className = "";
-    detail.textContent = `${active.length} queued`;
-    detail.className = "";
-  } else {
-    icon.className = "";
-  }
+  updateStatus(downloading.length, active.length);
 
   if (!active.length) {
     list.innerHTML = "";
