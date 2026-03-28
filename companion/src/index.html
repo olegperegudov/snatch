@@ -24,24 +24,24 @@
         </div>
       </div>
 
-      <!-- Queue (active downloads) -->
-      <div id="queue-panel">
-        <div id="queue-list"></div>
-        <div id="queue-empty" class="empty">no active downloads</div>
+      <!-- Controls bar -->
+      <div class="controls-bar">
+        <input type="text" id="search-input" placeholder="search..." autocomplete="off">
+        <label class="toggle mini" title="Show downloaded">
+          <input type="checkbox" id="show-downloaded">
+          <span class="toggle-slider"></span>
+        </label>
+        <button id="open-folder-btn" title="Open download folder">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        </button>
       </div>
 
-      <hr class="section-divider" id="divider" style="display:none">
-
-      <!-- Completed (history) -->
-      <div id="completed-panel" style="display:none">
-        <div class="section-header">
-          <input type="text" id="search-input" placeholder="search history..." autocomplete="off">
-          <button id="open-folder-btn" title="Open download folder">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-          </button>
-        </div>
-        <div id="completed-list"></div>
-        <div id="completed-empty" class="empty" style="display:none">no downloads yet</div>
+      <!-- Downloads list (active + completed) -->
+      <div id="downloads-panel">
+        <div id="queue-list"></div>
+        <div id="queue-empty" class="empty">no active downloads</div>
+        <div id="completed-list" style="display:none"></div>
+        <div id="completed-empty" class="empty" style="display:none"></div>
       </div>
 
       <!-- Settings -->

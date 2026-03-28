@@ -31,20 +31,33 @@ async function api(method, path, data) {
 
 // --- State ---
 let showSettings = false;
+let showDownloaded = false;
 let currentSettings = {};
+let _allCompleted = [];
 let _searchTimer = null;
 
 // --- Init ---
+let serverReady = false;
+
 async function init() {
   setupWindowControls();
-  await loadSettings();
-  loadQueue();
-  loadCompleted();
-  checkHealth();
+
+  // Fast startup health checks — retry quickly until server is ready
+  for (let i = 0; i < 20; i++) {
+    const ok = await checkHealth();
+    if (ok) break;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  if (serverReady) {
+    await loadSettings();
+    loadQueue();
+    loadCompleted();
+  }
 
   // Poll queue every 2s
   setInterval(() => {
-    if (!showSettings) {
+    if (!showSettings && serverReady) {
       loadQueue();
       if (!$("search-input").value.trim()) loadCompleted();
     }
@@ -60,14 +73,24 @@ async function checkHealth() {
   try {
     const d = await api("GET", "/health");
     if (d?.status === "ok") {
+      serverReady = true;
       detail.textContent = `listening on :9111`;
       detail.className = "";
       $("version-label").textContent = `v${d.version || "?"}`;
+      // Load data if this is recovery from a failed state
+      if (!$("queue-list").innerHTML) {
+        loadSettings();
+        loadQueue();
+        loadCompleted();
+      }
+      return true;
     }
   } catch {
-    detail.textContent = "server error";
+    serverReady = false;
+    detail.textContent = "server starting\u2026";
     detail.className = "error";
   }
+  return false;
 }
 
 // --- Queue ---
@@ -160,33 +183,53 @@ function renderQueue(items) {
     }));
 }
 
+// --- Show downloaded toggle ---
+$("show-downloaded").addEventListener("change", (e) => {
+  showDownloaded = e.target.checked;
+  updateCompletedVisibility();
+});
+
 // --- Completed ---
 async function loadCompleted() {
   try {
-    const data = await api("GET", "/completed");
-    renderCompleted((data && data.items) || []);
+    _allCompleted = ((await api("GET", "/completed")) || {}).items || [];
   } catch {
-    renderCompleted([]);
+    _allCompleted = [];
   }
+  renderCompleted(_allCompleted, false);
 }
 
 async function searchCompleted(query) {
   try {
     const data = await api("POST", "/search", { query, limit: 100 });
-    renderCompleted((data && data.items) || []);
+    _allCompleted = (data && data.items) || [];
   } catch {
-    renderCompleted([]);
+    _allCompleted = [];
+  }
+  // When searching, always show results regardless of toggle
+  renderCompleted(_allCompleted, true);
+}
+
+function updateCompletedVisibility() {
+  const q = $("search-input").value.trim();
+  if (showDownloaded || q.length >= 2) {
+    renderCompleted(_allCompleted, q.length >= 2);
+  } else {
+    $("completed-list").style.display = "none";
+    $("completed-empty").style.display = "none";
   }
 }
 
-function renderCompleted(items) {
-  const panel = $("completed-panel");
+function renderCompleted(items, forceShow) {
   const list = $("completed-list");
   const empty = $("completed-empty");
-  const divider = $("divider");
 
-  panel.style.display = "";
-  divider.style.display = "";
+  if (!showDownloaded && !forceShow) {
+    list.style.display = "none";
+    empty.style.display = "none";
+    return;
+  }
+  list.style.display = "";
 
   if (!items.length) {
     list.innerHTML = "";
@@ -226,6 +269,7 @@ $("search-input").addEventListener("input", (e) => {
       searchCompleted(q);
     } else if (q.length === 0) {
       loadCompleted();
+      updateCompletedVisibility();
     }
   }, 300);
 });
@@ -237,9 +281,9 @@ $("open-folder-btn").addEventListener("click", () => api("POST", "/reveal_file",
 $("settings-btn").addEventListener("click", () => {
   showSettings = !showSettings;
   $("settings-panel").style.display = showSettings ? "" : "none";
-  $("queue-panel").style.display = showSettings ? "none" : "";
-  $("completed-panel").style.display = showSettings ? "none" : "";
-  $("divider").style.display = showSettings ? "none" : "";
+  $("downloads-panel").style.display = showSettings ? "none" : "";
+  const controlsBar = $("search-input").closest(".controls-bar");
+  if (controlsBar) controlsBar.style.display = showSettings ? "none" : "";
   if (showSettings) loadSettings();
 });
 

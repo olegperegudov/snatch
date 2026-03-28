@@ -53,10 +53,20 @@ pub fn run() {
 
     // Start HTTP server on background thread
     let server_state = state.clone();
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(start_server(server_state));
-    });
+    std::thread::Builder::new()
+        .name("http-server".to_string())
+        .spawn(move || {
+            let rt = match tokio::runtime::Runtime::new() {
+                Ok(rt) => rt,
+                Err(e) => {
+                    eprintln!("[Snatch] FATAL: Failed to create tokio runtime: {e}");
+                    return;
+                }
+            };
+            rt.block_on(start_server(server_state));
+            eprintln!("[Snatch] HTTP server thread exited");
+        })
+        .expect("Failed to spawn HTTP server thread");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())

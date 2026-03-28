@@ -108,13 +108,42 @@ body {
   50% { color: #22c55e; }
 }
 
-/* Section divider */
-.section-divider {
-  border: none;
-  height: 1px;
-  margin: 0.5rem 0;
-  background: radial-gradient(ellipse at center, #4b5563 0%, transparent 70%);
-  opacity: 0.3;
+/* Controls bar */
+.controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.controls-bar #search-input {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  background: #1a1f28;
+  border: 1px solid #2a3040;
+  border-radius: 4px;
+  color: #d1d5db;
+  font: 400 0.7rem/1.2 inherit;
+  outline: none;
+}
+.controls-bar #search-input:focus { border-color: rgba(74, 222, 128, 0.4); }
+.controls-bar #search-input::placeholder { color: #4b5563; }
+
+/* Mini toggle (show downloaded) */
+.toggle.mini {
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.toggle.mini .toggle-slider::before {
+  height: 12px;
+  width: 12px;
+  left: 2px;
+  bottom: 2px;
+}
+.toggle.mini input:checked + .toggle-slider::before {
+  transform: translateX(12px);
 }
 
 .empty {
@@ -124,9 +153,11 @@ body {
   font-size: 0.75rem;
 }
 
-/* Queue */
-#queue-panel {
-  flex-shrink: 0;
+/* Downloads panel */
+#downloads-panel {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .q-item {
@@ -214,36 +245,7 @@ body {
 .q-item.error .q-title { color: #ef4444; }
 .q-item.error .q-info { color: #ef4444; }
 
-/* Completed / History */
-#completed-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding-bottom: 0.4rem;
-  flex-shrink: 0;
-}
-
-#search-input {
-  flex: 1;
-  padding: 0.3rem 0.5rem;
-  background: #1a1f28;
-  border: 1px solid #2a3040;
-  border-radius: 4px;
-  color: #d1d5db;
-  font: 400 0.7rem/1.2 inherit;
-  outline: none;
-}
-#search-input:focus { border-color: rgba(74, 222, 128, 0.4); }
-#search-input::placeholder { color: #4b5563; }
-
+/* Open folder button */
 #open-folder-btn {
   background: none;
   border: 1px solid #2a3040;
@@ -256,11 +258,6 @@ body {
   transition: all 0.2s;
 }
 #open-folder-btn:hover { color: #9ca3af; border-color: #4b5563; }
-
-#completed-list {
-  flex: 1;
-  overflow-y: auto;
-}
 
 .c-item {
   display: flex;

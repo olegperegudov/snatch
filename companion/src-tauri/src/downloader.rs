@@ -111,7 +111,11 @@ pub async fn download(
             let mut lock = items.lock().await;
             if let Some(item) = lock.get_mut(&item_id) {
                 item.status = Status::Error;
-                item.error = format!("Failed to start yt-dlp: {e}");
+                item.error = if e.kind() == std::io::ErrorKind::NotFound {
+                    "yt-dlp not found — reinstall Snatch or add yt-dlp to PATH".to_string()
+                } else {
+                    format!("Failed to start yt-dlp: {e}")
+                };
                 db.update_status_with_error(&item_id, "error", &item.error);
             }
             return;
@@ -222,7 +226,19 @@ pub async fn download(
                 let last_line = stderr_text.lines().rev()
                     .find(|l| !l.trim().is_empty())
                     .unwrap_or("yt-dlp exited with error");
-                item.error = last_line.to_string();
+                // Make common errors human-readable
+                let stderr_lower = stderr_text.to_lowercase();
+                item.error = if stderr_lower.contains("ffprobe") || stderr_lower.contains("ffmpeg not found") || stderr_lower.contains("ffmpeg is not installed") {
+                    "ffmpeg not installed — needed to merge video+audio".to_string()
+                } else if stderr_lower.contains("403") || stderr_lower.contains("forbidden") {
+                    "access denied (403) — stream may require authentication".to_string()
+                } else if stderr_lower.contains("404") || stderr_lower.contains("not found") {
+                    "stream not found (404) — link may have expired".to_string()
+                } else if stderr_lower.contains("unable to extract") || stderr_lower.contains("unsupported url") {
+                    "unsupported stream format".to_string()
+                } else {
+                    last_line.to_string()
+                };
                 db.update_status_with_error(&item_id, "error", &item.error);
             }
         }

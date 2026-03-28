@@ -145,15 +145,25 @@ pub async fn start_server(state: Arc<AppState>) {
         .layer(
             CorsLayer::new()
                 .allow_origin(AllowOrigin::predicate(|origin: &HeaderValue, _| {
-                    origin.as_bytes().starts_with(b"chrome-extension://")
+                    let o = origin.as_bytes();
+                    o.starts_with(b"chrome-extension://")
+                        || o.starts_with(b"tauri://")
+                        || o.starts_with(b"https://tauri.localhost")
+                        || o.starts_with(b"http://tauri.localhost")
                 }))
                 .allow_methods(tower_http::cors::Any)
                 .allow_headers(tower_http::cors::Any)
         )
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:9111").await
-        .expect("Failed to bind to port 9111");
+    let listener = match tokio::net::TcpListener::bind("127.0.0.1:9111").await {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("[Snatch] FATAL: Failed to bind to port 9111: {e}");
+            eprintln!("[Snatch] Is another instance of Snatch already running?");
+            return;
+        }
+    };
     eprintln!("[Snatch] HTTP server listening on :9111");
     axum::serve(listener, app).await.ok();
 }
